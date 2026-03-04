@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistema de Comandas - Rotisería</title>
+    <meta name="theme-color" content="#1d4ed8" />
+    <link rel="icon" type="image/svg+xml" href="ticket-icon.svg" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Sistema de Comandas</h1>
+      <p class="subtitle">Rotisería - Carga e impresión de pedidos</p>
+      <p class="app-version" id="app-version">Versión activa: -</p>
+      <p class="active-rotiseria" id="active-rotiseria">Rotisería activa: -</p>
+      <p class="status" id="status">Auto guardado activo</p>
+
+      <section class="panel operator-access-panel no-print" id="operator-access-panel">
+        <h2>Ingreso por rotisería</h2>
+        <div class="operator-access-controls">
+          <label>
+            Usuario
+            <input type="text" id="operator-user" autocomplete="username" placeholder="Ej: pepe" />
+          </label>
+          <label>
+            Contraseña
+            <input
+              type="password"
+              id="operator-password"
+              autocomplete="current-password"
+              placeholder="********"
+            />
+          </label>
+          <button type="button" id="operator-login-btn">Ingresar</button>
+          <button type="button" class="secondary" id="operator-logout-btn">Cerrar sesión</button>
+        </div>
+        <label class="operator-remember" for="operator-remember-user">
+          <input type="checkbox" id="operator-remember-user" />
+          Recordar usuario en este dispositivo
+        </label>
+        <p class="operator-access-status" id="operator-access-status">Ingresá con usuario y contraseña de la rotisería.</p>
+      </section>
+
+      <section class="panel admin-access-panel no-print" id="admin-access-panel">
+        <h2>Acceso administrador</h2>
+        <div class="admin-access-controls">
+          <label>
+            Usuario
+            <input type="text" id="admin-user" autocomplete="username" placeholder="admin" />
+          </label>
+          <label>
+            Contraseña
+            <input type="password" id="admin-password" autocomplete="current-password" placeholder="********" />
+          </label>
+          <button type="button" id="admin-login-btn">Ingresar</button>
+          <button type="button" class="secondary" id="admin-logout-btn">Cerrar sesión</button>
+        </div>
+        <p class="admin-access-status" id="admin-access-status">Configuración oculta para operadores.</p>
+      </section>
+
+      <section class="panel config-panel no-print" id="config-panel">
+        <h2>Configuración del local</h2>
+        <div class="profile-controls">
+          <label for="profile-select">Perfil de rotisería</label>
+          <select id="profile-select"></select>
+          <button type="button" id="add-profile-btn">Nuevo perfil</button>
+          <button type="button" class="secondary" id="delete-profile-btn">Eliminar perfil</button>
+        </div>
+        <div class="grid">
+          <label>
+            Nombre de la rotisería
+            <input type="text" id="negocio-nombre" placeholder="Ej: Rotisería Don Pepe" />
+          </label>
+          <label>
+            Teléfono del local
+            <input type="tel" id="negocio-telefono" placeholder="Ej: 11 1234-5678" />
+          </label>
+          <label class="full-width">
+            Dirección del local
+            <input type="text" id="negocio-direccion" placeholder="Ej: Av. Siempreviva 123" />
+          </label>
+          <label>
+            Usuario del perfil
+            <input type="text" id="perfil-usuario" placeholder="Ej: pepe" />
+          </label>
+          <label>
+            Contraseña del perfil
+            <input type="password" id="perfil-password" placeholder="Ej: clave123" />
+          </label>
+        </div>
+        <div class="config-actions">
+          <button type="button" id="save-profile-auth-btn">Guardar usuario y contraseña del perfil</button>
+          <button type="button" id="export-profile-backup-btn">Exportar backup perfil</button>
+          <button type="button" class="secondary" id="import-profile-backup-btn">Importar backup perfil</button>
+          <input type="file" id="import-profile-backup-file" accept="application/json" hidden />
+          <button type="button" class="secondary" id="reset-business-btn">Restablecer configuración del local</button>
+        </div>
+      </section>
+
+      <section class="panel form-panel requires-profile" id="app-panel">
+        <form id="comanda-form">
+          <div class="grid">
+            <label>
+              Nombre del cliente
+              <input type="text" id="cliente" required />
+            </label>
+
+            <label>
+              Número de teléfono
+              <input type="tel" id="telefono" required />
+            </label>
+
+            <label class="full-width">
+              Pedido
+              <textarea id="pedido" rows="4" required></textarea>
+            </label>
+
+            <label class="full-width">
+              Dirección
+              <input type="text" id="direccion" required />
+            </label>
+
+            <label>
+              Horario
+              <input type="time" id="horario" required />
+            </label>
+
+            <label>
+              Total ($)
+              <input
+                type="text"
+                id="total"
+                inputmode="numeric"
+                pattern="^\d{1,3}(\.\d{3})*$|^\d+$"
+                placeholder="Ej: 12.500"
+                required
+              />
+            </label>
+
+            <label>
+              Forma de pago
+              <select id="pago" required>
+                <option value="" disabled selected>Seleccionar...</option>
+                <option value="Efectivo">Efectivo</option>
+                <option value="Transferencia">Transferencia</option>
+              </select>
+            </label>
+
+            <label class="transfer-status-field" id="transfer-status-field">
+              Estado de transferencia
+              <select id="estado-transferencia">
+                <option value="" disabled selected>Seleccionar...</option>
+                <option value="Ya pagó">Ya pagó</option>
+                <option value="Pendiente de pago">Pendiente de pago</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="actions no-print">
+            <button type="submit">Generar comanda</button>
+            <button type="button" id="print-btn" disabled>Imprimir comanda</button>
+            <button type="reset" class="secondary">Limpiar</button>
+          </div>
+
+          <label class="mode-switch no-print" for="simple-mode">
+            <input type="checkbox" id="simple-mode" />
+            Modo Ticket simple (cocina)
+          </label>
+        </form>
+      </section>
+
+      <section class="panel ticket requires-profile" id="ticket">
+        <h2>Comanda</h2>
+        <div class="ticket-business">
+          <strong id="v-negocio-nombre">Rotisería</strong>
+          <div id="v-negocio-telefono">Tel: -</div>
+          <div id="v-negocio-direccion">Dirección: -</div>
+        </div>
+        <div class="ticket-row">
+          <span>N° comanda:</span>
+          <strong id="v-numero-comanda">-</strong>
+        </div>
+        <div class="ticket-row">
+          <span>Fecha:</span>
+          <strong id="v-fecha">-</strong>
+        </div>
+        <div class="ticket-row">
+          <span>Cliente:</span>
+          <strong id="v-cliente">-</strong>
+        </div>
+        <div class="ticket-row">
+          <span>Teléfono:</span>
+          <strong id="v-telefono">-</strong>
+        </div>
+        <div class="ticket-row">
+          <span>Dirección:</span>
+          <strong id="v-direccion">-</strong>
+        </div>
+        <div class="ticket-row">
+          <span>Horario:</span>
+          <strong id="v-horario">-</strong>
+        </div>
+        <div class="ticket-row align-start">
+          <span>Pedido:</span>
+          <strong id="v-pedido">-</strong>
+        </div>
+        <div class="ticket-row">
+          <span>Total:</span>
+          <strong id="v-total">-</strong>
+        </div>
+        <div class="ticket-row">
+          <span>Paga con:</span>
+          <strong id="v-pago">-</strong>
+        </div>
+        <div class="ticket-row" id="transfer-status-row">
+          <span>Estado transf.:</span>
+          <strong id="v-estado-transferencia">-</strong>
+        </div>
+      </section>
+
+      <section class="panel history-panel no-print requires-profile" id="history-panel">
+        <h2>Comandas impresas por mes</h2>
+        <div class="history-controls">
+          <label for="history-month">Mes</label>
+          <input type="month" id="history-month" />
+          <button type="button" id="export-csv-btn" class="secondary">Exportar CSV</button>
+        </div>
+        <p class="history-summary" id="history-summary">Sin comandas impresas en el mes seleccionado.</p>
+        <div class="monthly-report" id="monthly-report">Ingreso de ventas del mes: $0,00</div>
+        <div id="history-list" class="history-list"></div>
+      </section>
+    </main>
+
+    <div class="toast-container no-print" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

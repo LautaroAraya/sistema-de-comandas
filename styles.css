@@ -1,0 +1,512 @@
+:root {
+  color-scheme: light;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f5f5f5;
+  color: #222;
+}
+
+.container {
+  max-width: 900px;
+  margin: 24px auto;
+  padding: 0 16px 24px;
+}
+
+h1 {
+  margin: 0;
+}
+
+.subtitle {
+  margin-top: 6px;
+  color: #555;
+}
+
+.app-version {
+  margin-top: 8px;
+  margin-bottom: 0;
+  font-size: 13px;
+  color: #1e3a8a;
+  font-weight: 700;
+}
+
+.active-rotiseria {
+  margin-top: 8px;
+  margin-bottom: 0;
+  font-size: 14px;
+  color: #111827;
+  font-weight: 700;
+}
+
+.status {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #065f46;
+  font-weight: 600;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.config-panel {
+  display: none;
+}
+
+.requires-profile {
+  display: none;
+}
+
+body.profile-authenticated .requires-profile {
+  display: block;
+}
+
+body.admin-authenticated .config-panel {
+  display: block;
+}
+
+.admin-access-panel h2 {
+  margin-top: 0;
+}
+
+.operator-access-panel h2 {
+  margin-top: 0;
+}
+
+.operator-access-controls {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.operator-access-controls label {
+  font-weight: 600;
+}
+
+.operator-access-controls input {
+  max-width: 220px;
+}
+
+.operator-access-status {
+  margin: 10px 0 0;
+  color: #4b5563;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.operator-remember {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.operator-remember input {
+  width: auto;
+}
+
+.admin-access-controls {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-access-controls label {
+  font-weight: 600;
+}
+
+.admin-access-controls input {
+  max-width: 220px;
+}
+
+.admin-access-status {
+  margin: 10px 0 0;
+  color: #4b5563;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.toast-container {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  display: grid;
+  gap: 8px;
+  z-index: 1000;
+  max-width: 340px;
+}
+
+.toast {
+  background: #111827;
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.toast.error {
+  background: #991b1b;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.transfer-status-field {
+  display: none;
+}
+
+.transfer-status-field.visible {
+  display: flex;
+  max-width: 260px;
+}
+
+input,
+textarea,
+select,
+button {
+  font: inherit;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  border: 1px solid #cfcfcf;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fff;
+}
+
+.actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.mode-switch {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.mode-switch input {
+  width: auto;
+}
+
+button {
+  border: none;
+  border-radius: 8px;
+  background: #1d4ed8;
+  color: white;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+button.secondary {
+  background: #6b7280;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.config-panel h2 {
+  margin-top: 0;
+}
+
+.profile-controls {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.profile-controls label {
+  font-weight: 600;
+}
+
+.profile-controls select {
+  max-width: 260px;
+}
+
+.config-actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ticket h2 {
+  margin-top: 0;
+}
+
+.ticket-business {
+  border-bottom: 1px dashed #ddd;
+  padding-bottom: 8px;
+  margin-bottom: 6px;
+  display: grid;
+  gap: 2px;
+}
+
+.ticket-business strong {
+  font-size: 16px;
+}
+
+.ticket-business div {
+  color: #444;
+  font-size: 14px;
+}
+
+.ticket-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px dashed #ddd;
+  padding: 8px 0;
+}
+
+.ticket-row span {
+  color: #555;
+}
+
+.ticket-row strong {
+  text-align: right;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ticket-row.align-start {
+  align-items: flex-start;
+}
+
+.history-panel h2 {
+  margin-top: 0;
+}
+
+.history-controls {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.history-controls label {
+  font-weight: 600;
+}
+
+.history-controls input {
+  max-width: 220px;
+}
+
+.history-controls button {
+  align-self: end;
+}
+
+.history-summary {
+  margin-top: 10px;
+  color: #4b5563;
+}
+
+.monthly-report {
+  margin-top: 8px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-weight: 700;
+}
+
+.history-list {
+  display: grid;
+  gap: 10px;
+}
+
+.history-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f9fafb;
+}
+
+.history-item.cancelled {
+  opacity: 0.75;
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.history-item-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 700;
+}
+
+.history-item-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.history-delete-btn {
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  background: #991b1b;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.history-delete-btn.restore {
+  background: #065f46;
+}
+
+.history-item-body {
+  margin-top: 6px;
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+}
+
+@media (max-width: 700px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  @page {
+    size: 58mm auto;
+    margin: 0;
+  }
+
+  body {
+    background: white;
+    width: 58mm;
+    margin: 0;
+    padding: 0;
+    color: #000;
+  }
+
+  .container {
+    width: 58mm;
+    max-width: 58mm;
+    margin: 0;
+    padding: 0;
+  }
+
+  h1,
+  .subtitle,
+  .app-version,
+  .status,
+  .form-panel,
+  .no-print {
+    display: none !important;
+  }
+
+  .ticket {
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    padding: 2mm;
+    width: 58mm;
+    max-width: 58mm;
+    font-size: 11px;
+    line-height: 1.25;
+  }
+
+  .ticket h2 {
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .ticket-business {
+    border-bottom-color: #000;
+    margin-bottom: 4px;
+    padding-bottom: 4px;
+  }
+
+  .ticket-business strong {
+    font-size: 12px;
+  }
+
+  .ticket-business div {
+    font-size: 10px;
+  }
+
+  .ticket-row {
+    padding: 2px 0;
+  }
+
+  body.simple-ticket .ticket {
+    padding: 1.5mm;
+    font-size: 10px;
+    line-height: 1.15;
+  }
+
+  body.simple-ticket .ticket h2 {
+    font-size: 12px;
+    text-align: center;
+    margin: 0 0 2px;
+    padding-bottom: 2px;
+    border-bottom: 1px dashed #000;
+  }
+
+  body.simple-ticket .ticket-business {
+    margin-bottom: 2px;
+    padding-bottom: 2px;
+  }
+
+  body.simple-ticket .ticket-business strong {
+    font-size: 11px;
+  }
+
+  body.simple-ticket .ticket-business div {
+    font-size: 9px;
+  }
+
+  body.simple-ticket .ticket-row {
+    border-bottom: none;
+    padding: 1px 0;
+    gap: 4px;
+  }
+}

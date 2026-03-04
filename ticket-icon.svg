@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Icono ticket">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#0f2f8f"/>
+    </linearGradient>
+  </defs>
+  <rect x="32" y="32" width="448" height="448" rx="100" fill="url(#bg)"/>
+  <path d="M120 182h272c0 22 18 40 40 40v68c-22 0-40 18-40 40H120c0-22-18-40-40-40v-68c22 0 40-18 40-40z" fill="#ffffff"/>
+  <path d="M256 184v144" stroke="#1d4ed8" stroke-width="14" stroke-linecap="round" stroke-dasharray="10 12"/>
+  <path d="M172 242h46M294 242h46" stroke="#1d4ed8" stroke-width="16" stroke-linecap="round"/>
+</svg>
