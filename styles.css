@@ -1,6 +1,8 @@
 :root {
   color-scheme: light;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --page-bg-start: #f5f5f5;
+  --page-bg-end: #e5e7eb;
 }
 
 * {
@@ -9,14 +11,57 @@
 
 body {
   margin: 0;
-  background: #f5f5f5;
+  background: linear-gradient(135deg, var(--page-bg-start), var(--page-bg-end));
+  background-attachment: fixed;
   color: #222;
+  min-height: 100vh;
+}
+
+.background-palette {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed #d1d5db;
+}
+
+.background-panel h2 {
+  margin-top: 0;
+}
+
+.background-panel .background-palette {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.background-palette h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.background-palette-controls {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.background-palette-controls label {
+  font-weight: 600;
+}
+
+.background-palette-controls input[type="color"] {
+  width: 54px;
+  height: 38px;
+  padding: 4px;
 }
 
 .container {
   max-width: 900px;
-  margin: 24px auto;
-  padding: 0 16px 24px;
+  margin: 24px auto 0;
+  padding: 0 16px 0;
+  min-height: calc(100vh - 24px);
+  display: flex;
+  flex-direction: column;
 }
 
 h1 {
@@ -25,14 +70,14 @@ h1 {
 
 .subtitle {
   margin-top: 6px;
-  color: #555;
+  color: #000;
 }
 
 .app-version {
   margin-top: 8px;
   margin-bottom: 0;
   font-size: 13px;
-  color: #1e3a8a;
+  color: #000;
   font-weight: 700;
 }
 
@@ -40,15 +85,21 @@ h1 {
   margin-top: 8px;
   margin-bottom: 0;
   font-size: 14px;
-  color: #111827;
+  color: #000;
   font-weight: 700;
 }
 
 .status {
   margin-top: 8px;
   font-size: 14px;
-  color: #065f46;
+  color: #000;
   font-weight: 600;
+}
+
+.quick-logout-btn {
+  display: none;
+  margin-top: 10px;
+  align-self: flex-start;
 }
 
 .panel {
@@ -73,6 +124,27 @@ body.profile-authenticated .requires-profile {
 
 body.admin-authenticated .config-panel {
   display: block;
+}
+
+body.profile-authenticated .quick-logout-btn,
+body.admin-authenticated .quick-logout-btn {
+  display: inline-flex;
+}
+
+body.profile-authenticated .operator-access-panel {
+  display: none;
+}
+
+body.admin-authenticated .admin-access-panel {
+  display: none;
+}
+
+body.profile-authenticated .admin-access-panel {
+  display: none;
+}
+
+body.admin-authenticated .operator-access-panel {
+  display: none;
 }
 
 .admin-access-panel h2 {
@@ -196,6 +268,67 @@ button {
   font: inherit;
 }
 
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  padding-right: 42px;
+}
+
+.password-field input::-ms-reveal,
+.password-field input::-ms-clear {
+  display: none;
+}
+
+.password-field input::-webkit-credentials-auto-fill-button,
+.password-field input::-webkit-strong-password-auto-fill-button {
+  display: none !important;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.toggle-password-btn {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #6b7280;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-password-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.toggle-password-btn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.toggle-password-btn:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 1px;
+}
+
+.toggle-password-btn.is-visible::after {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 2px;
+  background: currentColor;
+  transform: rotate(-35deg);
+}
+
 input,
 textarea,
 select {
@@ -275,6 +408,14 @@ button:disabled {
   margin-top: 0;
 }
 
+.ticket {
+  display: none;
+}
+
+.ticket.visible {
+  display: block;
+}
+
 .ticket-business {
   border-bottom: 1px dashed #ddd;
   padding-bottom: 8px;
@@ -333,6 +474,10 @@ button:disabled {
   max-width: 220px;
 }
 
+#history-search {
+  min-width: 240px;
+}
+
 .history-controls button {
   align-self: end;
 }
@@ -350,6 +495,17 @@ button:disabled {
   border-radius: 8px;
   background: #eff6ff;
   color: #1e3a8a;
+  font-weight: 700;
+}
+
+.daily-report {
+  margin-top: 10px;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border: 1px solid #dcfce7;
+  border-radius: 8px;
+  background: #f0fdf4;
+  color: #166534;
   font-weight: 700;
 }
 
@@ -384,12 +540,53 @@ button:disabled {
   gap: 4px;
 }
 
+.payment-badge {
+  width: fit-content;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.payment-badge.cash {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.payment-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.payment-badge.paid {
+  background: #dcfce7;
+  color: #166534;
+}
+
 .history-delete-btn {
   width: fit-content;
   padding: 6px 10px;
   border-radius: 6px;
   border: none;
   background: #991b1b;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.history-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.history-edit-btn {
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  background: #1d4ed8;
   color: #fff;
   font-size: 12px;
   font-weight: 700;
@@ -405,6 +602,53 @@ button:disabled {
   display: grid;
   gap: 4px;
   font-size: 14px;
+}
+
+.site-footer {
+  margin-top: 20px;
+  padding: 14px 16px;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid #d1d5db;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding-left: max(16px, calc((100vw - 900px) / 2 + 16px));
+  padding-right: max(16px, calc((100vw - 900px) / 2 + 16px));
+  flex: 1;
+  align-content: flex-start;
+}
+
+.site-footer a {
+  color: #1d4ed8;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.site-footer-instagram {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.site-footer-instagram svg {
+  width: 18px;
+  height: 18px;
+}
+
+.site-footer a:hover {
+  text-decoration: underline;
+}
+
+.site-footer p {
+  margin: 0;
+  color: #374151;
+  font-weight: 600;
 }
 
 @media (max-width: 700px) {
@@ -444,6 +688,7 @@ button:disabled {
   }
 
   .ticket {
+    display: block !important;
     border: none;
     border-radius: 0;
     margin: 0;

@@ -16,6 +16,7 @@
       <p class="app-version" id="app-version">Versión activa: -</p>
       <p class="active-rotiseria" id="active-rotiseria">Rotisería activa: -</p>
       <p class="status" id="status">Auto guardado activo</p>
+      <button type="button" id="quick-logout-btn" class="secondary quick-logout-btn no-print">Cerrar sesión</button>
 
       <section class="panel operator-access-panel no-print" id="operator-access-panel">
         <h2>Ingreso por rotisería</h2>
@@ -26,12 +27,31 @@
           </label>
           <label>
             Contraseña
-            <input
-              type="password"
-              id="operator-password"
-              autocomplete="current-password"
-              placeholder="********"
-            />
+            <div class="password-field">
+              <input
+                type="password"
+                id="operator-password"
+                autocomplete="current-password"
+                placeholder="********"
+              />
+              <button
+                type="button"
+                class="toggle-password-btn"
+                data-target="operator-password"
+                aria-label="Mostrar contraseña"
+                aria-pressed="false"
+              >
+                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                  <path
+                    d="M1 8s2.5-4 7-4 7 4 7 4-2.5 4-7 4-7-4-7-4Z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  />
+                  <circle cx="8" cy="8" r="2.5" fill="none" stroke="currentColor" stroke-width="1.5" />
+                </svg>
+              </button>
+            </div>
           </label>
           <button type="button" id="operator-login-btn">Ingresar</button>
           <button type="button" class="secondary" id="operator-logout-btn">Cerrar sesión</button>
@@ -52,7 +72,26 @@
           </label>
           <label>
             Contraseña
-            <input type="password" id="admin-password" autocomplete="current-password" placeholder="********" />
+            <div class="password-field">
+              <input type="password" id="admin-password" autocomplete="current-password" placeholder="********" />
+              <button
+                type="button"
+                class="toggle-password-btn"
+                data-target="admin-password"
+                aria-label="Mostrar contraseña"
+                aria-pressed="false"
+              >
+                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                  <path
+                    d="M1 8s2.5-4 7-4 7 4 7 4-2.5 4-7 4-7-4-7-4Z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  />
+                  <circle cx="8" cy="8" r="2.5" fill="none" stroke="currentColor" stroke-width="1.5" />
+                </svg>
+              </button>
+            </div>
           </label>
           <button type="button" id="admin-login-btn">Ingresar</button>
           <button type="button" class="secondary" id="admin-logout-btn">Cerrar sesión</button>
@@ -87,7 +126,26 @@
           </label>
           <label>
             Contraseña del perfil
-            <input type="password" id="perfil-password" placeholder="Ej: clave123" />
+            <div class="password-field">
+              <input type="password" id="perfil-password" placeholder="Ej: clave123" />
+              <button
+                type="button"
+                class="toggle-password-btn"
+                data-target="perfil-password"
+                aria-label="Mostrar contraseña"
+                aria-pressed="false"
+              >
+                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                  <path
+                    d="M1 8s2.5-4 7-4 7 4 7 4-2.5 4-7 4-7-4-7-4Z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  />
+                  <circle cx="8" cy="8" r="2.5" fill="none" stroke="currentColor" stroke-width="1.5" />
+                </svg>
+              </button>
+            </div>
           </label>
         </div>
         <div class="config-actions">
@@ -96,6 +154,24 @@
           <button type="button" class="secondary" id="import-profile-backup-btn">Importar backup perfil</button>
           <input type="file" id="import-profile-backup-file" accept="application/json" hidden />
           <button type="button" class="secondary" id="reset-business-btn">Restablecer configuración del local</button>
+        </div>
+      </section>
+
+      <section class="panel background-panel no-print requires-profile" id="background-panel">
+        <h2>Paleta de fondo</h2>
+        <div class="background-palette">
+          <h3>Degradado con 2 colores</h3>
+          <div class="background-palette-controls">
+            <label for="bg-color-start">
+              Color 1
+              <input type="color" id="bg-color-start" value="#f5f5f5" />
+            </label>
+            <label for="bg-color-end">
+              Color 2
+              <input type="color" id="bg-color-end" value="#e5e7eb" />
+            </label>
+            <button type="button" class="secondary" id="reset-background-btn">Restablecer fondo</button>
+          </div>
         </div>
       </section>
 
@@ -225,12 +301,39 @@
         <div class="history-controls">
           <label for="history-month">Mes</label>
           <input type="month" id="history-month" />
+          <label for="history-search">Buscar</label>
+          <input
+            type="search"
+            id="history-search"
+            placeholder="Cliente, teléfono, # comanda..."
+            autocomplete="off"
+          />
+          <button type="button" id="clear-history-search-btn" class="secondary">Limpiar búsqueda</button>
           <button type="button" id="export-csv-btn" class="secondary">Exportar CSV</button>
         </div>
+        <div class="daily-report" id="daily-report">Hoy: 0 comandas activas · Ventas $0,00 · Transferencias pendientes 0</div>
         <p class="history-summary" id="history-summary">Sin comandas impresas en el mes seleccionado.</p>
         <div class="monthly-report" id="monthly-report">Ingreso de ventas del mes: $0,00</div>
         <div id="history-list" class="history-list"></div>
       </section>
+
+      <footer class="site-footer no-print">
+        <a
+          class="site-footer-instagram"
+          href="https://www.instagram.com/digital.servicios1/"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Instagram de Digital y Servicios"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <rect x="3.5" y="3.5" width="17" height="17" rx="5" ry="5" fill="none" stroke="currentColor" stroke-width="2" />
+            <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2" />
+            <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" />
+          </svg>
+          <span>@digital.servicios1</span>
+        </a>
+        <p>&copy; Derechos reservados a Digital &amp; Servicios</p>
+      </footer>
     </main>
 
     <div class="toast-container no-print" id="toast-container" aria-live="polite" aria-atomic="true"></div>

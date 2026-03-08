@@ -1,6 +1,7 @@
 const form = document.getElementById("comanda-form");
 const printBtn = document.getElementById("print-btn");
 const statusEl = document.getElementById("status");
+const quickLogoutBtn = document.getElementById("quick-logout-btn");
 const toastContainerEl = document.getElementById("toast-container");
 const appVersionEl = document.getElementById("app-version");
 const activeRotiseriaEl = document.getElementById("active-rotiseria");
@@ -20,19 +21,26 @@ const profileSelectEl = document.getElementById("profile-select");
 const addProfileBtn = document.getElementById("add-profile-btn");
 const deleteProfileBtn = document.getElementById("delete-profile-btn");
 const historyMonthEl = document.getElementById("history-month");
+const historySearchEl = document.getElementById("history-search");
+const clearHistorySearchBtn = document.getElementById("clear-history-search-btn");
 const historyListEl = document.getElementById("history-list");
 const historySummaryEl = document.getElementById("history-summary");
 const monthlyReportEl = document.getElementById("monthly-report");
+const dailyReportEl = document.getElementById("daily-report");
 const exportCsvBtn = document.getElementById("export-csv-btn");
 const resetBusinessBtn = document.getElementById("reset-business-btn");
 const saveProfileAuthBtn = document.getElementById("save-profile-auth-btn");
 const exportProfileBackupBtn = document.getElementById("export-profile-backup-btn");
 const importProfileBackupBtn = document.getElementById("import-profile-backup-btn");
 const importProfileBackupFile = document.getElementById("import-profile-backup-file");
+const bgColorStartEl = document.getElementById("bg-color-start");
+const bgColorEndEl = document.getElementById("bg-color-end");
+const resetBackgroundBtn = document.getElementById("reset-background-btn");
 const profileUserEl = document.getElementById("perfil-usuario");
 const profilePasswordEl = document.getElementById("perfil-password");
 const transferStatusFieldEl = document.getElementById("transfer-status-field");
 const transferStatusRowEl = document.getElementById("transfer-status-row");
+const ticketPanelEl = document.getElementById("ticket");
 const businessFields = {
   nombre: document.getElementById("negocio-nombre"),
   telefono: document.getElementById("negocio-telefono"),
@@ -56,6 +64,8 @@ const ADMIN_IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 const ACTION_ALERTS_ENABLED = true;
 const TOAST_DURATION_MS = 2800;
 const PROFILE_DEFAULT = "principal";
+const DEFAULT_BACKGROUND_START = "#f5f5f5";
+const DEFAULT_BACKGROUND_END = "#e5e7eb";
 const PROFILE_BASE_KEYS = {
   DRAFT: "draft",
   LAST_TICKET: "lastTicket",
@@ -64,10 +74,12 @@ const PROFILE_BASE_KEYS = {
   BUSINESS: "businessConfig",
   AUTH: "profileAuth",
   NEXT_ORDER_NUMBER: "nextOrderNumber",
+  BACKGROUND_GRADIENT: "backgroundGradient",
 };
 
 let activeProfileId = PROFILE_DEFAULT;
 let adminIdleTimer = null;
+let editingPrintedTicketId = null;
 
 const fields = {
   cliente: document.getElementById("cliente"),
@@ -99,6 +111,76 @@ function formatAmountForInput(value) {
     return "";
   }
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+function normalizeHexColor(value, fallback) {
+  const text = String(value || "").trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(text)) {
+    return text.toLowerCase();
+  }
+  return fallback;
+}
+
+function applyBackgroundGradient(startColor, endColor) {
+  document.documentElement.style.setProperty("--page-bg-start", startColor);
+  document.documentElement.style.setProperty("--page-bg-end", endColor);
+}
+
+function readBackgroundGradientValues() {
+  return {
+    start: normalizeHexColor(bgColorStartEl.value, DEFAULT_BACKGROUND_START),
+    end: normalizeHexColor(bgColorEndEl.value, DEFAULT_BACKGROUND_END),
+  };
+}
+
+function writeBackgroundGradientValues(values) {
+  bgColorStartEl.value = normalizeHexColor(values.start, DEFAULT_BACKGROUND_START);
+  bgColorEndEl.value = normalizeHexColor(values.end, DEFAULT_BACKGROUND_END);
+}
+
+function saveBackgroundGradient(showStatus = false) {
+  const values = readBackgroundGradientValues();
+  applyBackgroundGradient(values.start, values.end);
+  localStorage.setItem(keyFor(PROFILE_BASE_KEYS.BACKGROUND_GRADIENT), JSON.stringify(values));
+  if (showStatus) {
+    setStatus("Fondo degradado guardado", false, true);
+  }
+}
+
+function loadBackgroundGradient() {
+  try {
+    const raw = localStorage.getItem(keyFor(PROFILE_BASE_KEYS.BACKGROUND_GRADIENT));
+    if (!raw) {
+      writeBackgroundGradientValues({
+        start: DEFAULT_BACKGROUND_START,
+        end: DEFAULT_BACKGROUND_END,
+      });
+      applyBackgroundGradient(DEFAULT_BACKGROUND_START, DEFAULT_BACKGROUND_END);
+      return;
+    }
+
+    const parsed = JSON.parse(raw);
+    const start = normalizeHexColor(parsed.start, DEFAULT_BACKGROUND_START);
+    const end = normalizeHexColor(parsed.end, DEFAULT_BACKGROUND_END);
+    writeBackgroundGradientValues({ start, end });
+    applyBackgroundGradient(start, end);
+  } catch {
+    writeBackgroundGradientValues({
+      start: DEFAULT_BACKGROUND_START,
+      end: DEFAULT_BACKGROUND_END,
+    });
+    applyBackgroundGradient(DEFAULT_BACKGROUND_START, DEFAULT_BACKGROUND_END);
+  }
+}
+
+function resetBackgroundGradient() {
+  writeBackgroundGradientValues({
+    start: DEFAULT_BACKGROUND_START,
+    end: DEFAULT_BACKGROUND_END,
+  });
+  applyBackgroundGradient(DEFAULT_BACKGROUND_START, DEFAULT_BACKGROUND_END);
+  localStorage.removeItem(keyFor(PROFILE_BASE_KEYS.BACKGROUND_GRADIENT));
+  setStatus("Fondo restablecido", false, true);
 }
 
 function keyFor(baseKey) {
@@ -356,7 +438,18 @@ function handleOperatorLogout() {
   setOperatorSession(null);
   writeFormValues({});
   renderTicket({});
+  setTicketVisibility(false);
   setStatus("Sesión de rotisería cerrada", false, true);
+}
+
+function handleQuickLogout() {
+  setOperatorSession(null);
+  setAdminSession(false);
+  writeFormValues({});
+  renderTicket({});
+  setTicketVisibility(false);
+  editingPrintedTicketId = null;
+  setStatus("Sesiones cerradas", false, true);
 }
 
 function handleAdminLogin() {
@@ -421,6 +514,7 @@ function exportProfileBackup() {
       printedTickets: localStorage.getItem(keyFor(PROFILE_BASE_KEYS.PRINTED_TICKETS)),
       printMode: localStorage.getItem(keyFor(PROFILE_BASE_KEYS.PRINT_MODE)),
       nextOrderNumber: localStorage.getItem(keyFor(PROFILE_BASE_KEYS.NEXT_ORDER_NUMBER)),
+      backgroundGradient: localStorage.getItem(keyFor(PROFILE_BASE_KEYS.BACKGROUND_GRADIENT)),
     },
   };
 
@@ -487,6 +581,8 @@ function importProfileBackupFromFile(file) {
                       ? "printMode"
                       : name === "NEXT_ORDER_NUMBER"
                         ? "nextOrderNumber"
+                        : name === "BACKGROUND_GRADIENT"
+                          ? "backgroundGradient"
                         : null;
 
         if (!sourceKey) {
@@ -692,6 +788,10 @@ function renderTicket(data) {
   printBtn.disabled = !data.fecha;
 }
 
+function setTicketVisibility(visible) {
+  ticketPanelEl.classList.toggle("visible", Boolean(visible));
+}
+
 function loadProfileData() {
   try {
     const businessRaw = localStorage.getItem(keyFor(PROFILE_BASE_KEYS.BUSINESS));
@@ -705,9 +805,12 @@ function loadProfileData() {
     }
 
     writeProfileAuthValues(getProfileAuth(activeProfileId));
+    loadBackgroundGradient();
 
     writeFormValues({});
     renderTicket({});
+    setTicketVisibility(false);
+    historySearchEl.value = "";
 
     const draftRaw = localStorage.getItem(keyFor(PROFILE_BASE_KEYS.DRAFT));
     if (draftRaw) {
@@ -716,7 +819,7 @@ function loadProfileData() {
 
     const lastTicketRaw = localStorage.getItem(keyFor(PROFILE_BASE_KEYS.LAST_TICKET));
     if (lastTicketRaw) {
-      renderTicket(JSON.parse(lastTicketRaw));
+      printBtn.disabled = false;
     }
 
     const simplePrintRaw = localStorage.getItem(keyFor(PROFILE_BASE_KEYS.PRINT_MODE));
@@ -765,6 +868,11 @@ function getPrintedTickets() {
         nextItem.cancelled = false;
       }
 
+      if (!nextItem.originId) {
+        changed = true;
+        nextItem.originId = getTicketIdentity(nextItem);
+      }
+
       return nextItem;
     });
 
@@ -788,13 +896,85 @@ function getTicketsByMonth(selectedMonth) {
     .sort((a, b) => new Date(b.printedAt) - new Date(a.printedAt));
 }
 
+function isSameLocalDay(dateA, dateB) {
+  return (
+    dateA.getFullYear() === dateB.getFullYear() &&
+    dateA.getMonth() === dateB.getMonth() &&
+    dateA.getDate() === dateB.getDate()
+  );
+}
+
+function getTicketIdentity(ticket) {
+  if (ticket.originId) {
+    return String(ticket.originId);
+  }
+
+  return [
+    ticket.createdAt || "",
+    ticket.numeroComanda || "",
+    ticket.cliente || "",
+    ticket.telefono || "",
+    ticket.total || "",
+  ].join("|");
+}
+
+function renderDailySummary() {
+  const now = new Date();
+  const todayItems = getPrintedTickets().filter((item) =>
+    isSameLocalDay(new Date(item.printedAt), now)
+  );
+  const activeToday = todayItems.filter((item) => !item.cancelled);
+  const totalToday = activeToday.reduce((sum, item) => sum + parseAmount(item.total), 0);
+  const pendingTransfers = activeToday.filter(
+    (item) => item.pago === "Transferencia" && item.estadoTransferencia !== "Ya pagó"
+  ).length;
+
+  dailyReportEl.textContent = `Hoy: ${activeToday.length} comandas activas · Ventas ${money(totalToday)} · Transferencias pendientes ${pendingTransfers}`;
+}
+
+function getPaymentBadgeData(item) {
+  if (item.pago === "Transferencia") {
+    const paid = item.estadoTransferencia === "Ya pagó";
+    return paid
+      ? { label: "Transferencia pagada", className: "paid" }
+      : { label: "Transferencia pendiente", className: "pending" };
+  }
+
+  return { label: "Efectivo", className: "cash" };
+}
+
 function renderHistory() {
+  renderDailySummary();
   const selectedMonth = historyMonthEl.value;
-  const filtered = getTicketsByMonth(selectedMonth);
+  const query = historySearchEl.value.trim().toLowerCase();
+  clearHistorySearchBtn.disabled = query.length === 0;
+  const monthItems = getTicketsByMonth(selectedMonth);
+  const filtered = query
+    ? monthItems.filter((item) => {
+        const orderNumber = item.numeroComanda ? formatOrderNumber(item.numeroComanda) : "";
+        const haystack = [
+          orderNumber,
+          item.cliente,
+          item.telefono,
+          item.direccion,
+          item.pedido,
+          item.pago,
+          item.estadoTransferencia,
+        ]
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(query);
+      })
+    : monthItems;
+  const monthTotal = monthItems
+    .filter((item) => !item.cancelled)
+    .reduce((sum, item) => sum + parseAmount(item.total), 0);
+  monthlyReportEl.textContent = `Ingreso de ventas del mes: ${money(monthTotal)}`;
 
   if (filtered.length === 0) {
-    historySummaryEl.textContent = "Sin comandas impresas en el mes seleccionado.";
-    monthlyReportEl.textContent = `Ingreso de ventas del mes: ${money(0)}`;
+    historySummaryEl.textContent = query
+      ? "No hay coincidencias para la búsqueda en el mes seleccionado."
+      : "Sin comandas impresas en el mes seleccionado.";
     historyListEl.innerHTML = "";
     return;
   }
@@ -802,12 +982,13 @@ function renderHistory() {
   const activeItems = filtered.filter((item) => !item.cancelled);
   const cancelledItems = filtered.filter((item) => item.cancelled);
   const totalMes = activeItems.reduce((sum, item) => sum + parseAmount(item.total), 0);
-  historySummaryEl.textContent = `${activeItems.length} activa(s), ${cancelledItems.length} cancelada(s) · Total ${money(totalMes)}`;
-  monthlyReportEl.textContent = `Ingreso de ventas del mes: ${money(totalMes)}`;
+  historySummaryEl.textContent = `${activeItems.length} activa(s), ${cancelledItems.length} cancelada(s) · Mostrando ${filtered.length} de ${monthItems.length} · Total ${money(totalMes)}`;
 
   historyListEl.innerHTML = filtered
-    .map(
-      (item) => `
+    .map((item) => {
+      const paymentBadge = getPaymentBadgeData(item);
+
+      return `
         <article class="history-item${item.cancelled ? " cancelled" : ""}">
           <div class="history-item-head">
             <div class="history-item-title">
@@ -816,7 +997,11 @@ function renderHistory() {
                   ? `#${formatOrderNumber(item.numeroComanda)} · ${item.cliente}`
                   : item.cliente
               }</span>
-              <button class="history-delete-btn ${item.cancelled ? "restore" : ""}" type="button" data-ticket-id="${item.ticketId}">${item.cancelled ? "Restaurar comanda" : "Cancelar comanda"}</button>
+              <span class="payment-badge ${paymentBadge.className}">${paymentBadge.label}</span>
+              <div class="history-actions">
+                <button class="history-edit-btn" type="button" data-action="edit" data-ticket-id="${item.ticketId}">Editar</button>
+                <button class="history-delete-btn" type="button" data-action="delete" data-ticket-id="${item.ticketId}">Eliminar</button>
+              </div>
             </div>
             <span>${money(item.total)}</span>
           </div>
@@ -835,9 +1020,43 @@ function renderHistory() {
             <div>Pedido: ${item.pedido}</div>
           </div>
         </article>
-      `
-    )
+      `;
+    })
     .join("");
+}
+
+function startEditingPrintedTicket(ticketId) {
+  const printedItems = getPrintedTickets();
+  const ticket = printedItems.find((item) => item.ticketId === ticketId);
+  if (!ticket) {
+    setStatus("No se encontró la comanda para editar", true, true);
+    return;
+  }
+
+  editingPrintedTicketId = ticketId;
+  writeFormValues(ticket);
+  setTicketVisibility(false);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  setStatus("Editando comanda. Presioná Generar comanda para guardar cambios.", false, true);
+}
+
+function deletePrintedTicket(ticketId) {
+  const printedItems = getPrintedTickets();
+  const index = printedItems.findIndex((item) => item.ticketId === ticketId);
+  if (index === -1) {
+    setStatus("No se encontró la comanda para eliminar", true, true);
+    return;
+  }
+
+  const confirmed = window.confirm("¿Eliminar esta comanda del historial? Esta acción no se puede deshacer.");
+  if (!confirmed) {
+    return;
+  }
+
+  printedItems.splice(index, 1);
+  savePrintedTickets(printedItems);
+  renderHistory();
+  setStatus("Comanda eliminada", false, true);
 }
 
 function toCsvCell(value) {
@@ -905,23 +1124,30 @@ function exportMonthToCsv() {
 function savePrintedTicket() {
   const raw = localStorage.getItem(keyFor(PROFILE_BASE_KEYS.LAST_TICKET));
   if (!raw) {
-    return false;
+    return { status: "invalid" };
   }
 
   const ticket = JSON.parse(raw);
   if (!ticket.fecha) {
-    return false;
+    return { status: "invalid" };
   }
 
   const printedItems = getPrintedTickets();
+  const identity = getTicketIdentity(ticket);
+  const alreadySaved = printedItems.some((item) => getTicketIdentity(item) === identity);
+  if (alreadySaved) {
+    return { status: "duplicate" };
+  }
+
   printedItems.push({
     ...ticket,
     ticketId: generateTicketId(),
+    originId: identity,
     printedAt: new Date().toISOString(),
   });
 
   savePrintedTickets(printedItems);
-  return true;
+  return { status: "saved" };
 }
 
 function togglePrintedTicketCancelled(ticketId) {
@@ -961,6 +1187,29 @@ function handleTotalInput() {
   }
 }
 
+function setupPasswordToggles() {
+  const toggleButtons = document.querySelectorAll(".toggle-password-btn");
+  toggleButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const targetId = button.getAttribute("data-target");
+      if (!targetId) {
+        return;
+      }
+
+      const input = document.getElementById(targetId);
+      if (!(input instanceof HTMLInputElement)) {
+        return;
+      }
+
+      const isPassword = input.type === "password";
+      input.type = isPassword ? "text" : "password";
+      button.classList.toggle("is-visible", isPassword);
+      button.setAttribute("aria-pressed", String(isPassword));
+      button.setAttribute("aria-label", isPassword ? "Ocultar contraseña" : "Mostrar contraseña");
+    });
+  });
+}
+
 form.addEventListener("submit", (event) => {
   event.preventDefault();
 
@@ -981,31 +1230,80 @@ form.addEventListener("submit", (event) => {
     return;
   }
 
+  const formData = readFormValues();
+
+  if (editingPrintedTicketId) {
+    const printedItems = getPrintedTickets();
+    const index = printedItems.findIndex((item) => item.ticketId === editingPrintedTicketId);
+
+    if (index === -1) {
+      editingPrintedTicketId = null;
+      setStatus("No se encontró la comanda a editar", true, true);
+      return;
+    }
+
+    const current = printedItems[index];
+    const updatedTicket = {
+      ...current,
+      ...formData,
+      originId: current.originId || getTicketIdentity(current),
+    };
+
+    printedItems[index] = updatedTicket;
+    savePrintedTickets(printedItems);
+    localStorage.setItem(keyFor(PROFILE_BASE_KEYS.LAST_TICKET), JSON.stringify(updatedTicket));
+    editingPrintedTicketId = null;
+    printBtn.disabled = false;
+    setTicketVisibility(false);
+    renderHistory();
+    setStatus("Comanda actualizada", false, true);
+    return;
+  }
+
   const ticketData = {
-    ...readFormValues(),
+    ...formData,
     numeroComanda: getNextOrderNumber(),
     fecha: fechaActual(),
     createdAt: new Date().toISOString(),
   };
 
-  renderTicket(ticketData);
   localStorage.setItem(keyFor(PROFILE_BASE_KEYS.LAST_TICKET), JSON.stringify(ticketData));
   saveDraft();
-  setStatus("Comanda generada y guardada", false, true);
+  setTicketVisibility(false);
+  printBtn.disabled = false;
+  setStatus("Comanda generada. Se mostrará al imprimir.", false, true);
 });
 
 printBtn.addEventListener("click", () => {
-  const saved = savePrintedTicket();
-  if (saved) {
+  const raw = localStorage.getItem(keyFor(PROFILE_BASE_KEYS.LAST_TICKET));
+  if (!raw) {
+    setStatus("Primero generá una comanda", true, true);
+    return;
+  }
+
+  const ticket = JSON.parse(raw);
+  if (!ticket.fecha) {
+    setStatus("La comanda no es válida para imprimir", true, true);
+    return;
+  }
+
+  renderTicket(ticket);
+  setTicketVisibility(true);
+  const saveResult = savePrintedTicket();
+  if (saveResult.status === "saved") {
     renderHistory();
     setStatus("Comanda impresa y guardada en historial mensual", false, true);
+  } else if (saveResult.status === "duplicate") {
+    setStatus("Comanda ya guardada en historial. Se imprime sin duplicar registro.", false, true);
   }
   window.print();
 });
 
 form.addEventListener("reset", () => {
   setTimeout(() => {
+    editingPrintedTicketId = null;
     renderTicket({});
+    setTicketVisibility(false);
     localStorage.removeItem(keyFor(PROFILE_BASE_KEYS.DRAFT));
     setStatus("Formulario limpio", false, true);
   }, 0);
@@ -1021,6 +1319,18 @@ Object.values(businessFields).forEach((field) => {
   field.addEventListener("change", saveBusinessConfig);
 });
 
+bgColorStartEl.addEventListener("input", () => {
+  const values = readBackgroundGradientValues();
+  applyBackgroundGradient(values.start, values.end);
+});
+bgColorEndEl.addEventListener("input", () => {
+  const values = readBackgroundGradientValues();
+  applyBackgroundGradient(values.start, values.end);
+});
+bgColorStartEl.addEventListener("change", () => saveBackgroundGradient(false));
+bgColorEndEl.addEventListener("change", () => saveBackgroundGradient(false));
+resetBackgroundBtn.addEventListener("click", resetBackgroundGradient);
+
 fields.total.addEventListener("input", handleTotalInput);
 fields.total.addEventListener("blur", handleTotalInput);
 fields.pago.addEventListener("change", updateTransferStatusVisibility);
@@ -1035,6 +1345,16 @@ simpleModeEl.addEventListener("change", () => {
 });
 
 historyMonthEl.addEventListener("change", renderHistory);
+historySearchEl.addEventListener("input", renderHistory);
+clearHistorySearchBtn.addEventListener("click", () => {
+  if (!historySearchEl.value) {
+    return;
+  }
+
+  historySearchEl.value = "";
+  renderHistory();
+  historySearchEl.focus();
+});
 historyListEl.addEventListener("click", (event) => {
   const target = event.target;
   if (!(target instanceof HTMLElement)) {
@@ -1046,7 +1366,15 @@ historyListEl.addEventListener("click", (event) => {
     return;
   }
 
-  togglePrintedTicketCancelled(ticketId);
+  const action = target.getAttribute("data-action");
+  if (action === "edit") {
+    startEditingPrintedTicket(ticketId);
+    return;
+  }
+
+  if (action === "delete") {
+    deletePrintedTicket(ticketId);
+  }
 });
 exportCsvBtn.addEventListener("click", exportMonthToCsv);
 resetBusinessBtn.addEventListener("click", resetBusinessConfig);
@@ -1131,6 +1459,7 @@ adminPasswordEl.addEventListener("keydown", (event) => {
 });
 operatorLoginBtn.addEventListener("click", handleOperatorLogin);
 operatorLogoutBtn.addEventListener("click", handleOperatorLogout);
+quickLogoutBtn.addEventListener("click", handleQuickLogout);
 operatorPasswordEl.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     handleOperatorLogin();
@@ -1190,3 +1519,4 @@ if (existingOperatorSession) {
   loadProfileData();
 }
 appVersionEl.textContent = `Versión activa: ${APP_VERSION}`;
+setupPasswordToggles();
