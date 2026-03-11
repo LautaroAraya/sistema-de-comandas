@@ -663,12 +663,20 @@ button:disabled {
     margin: 0;
   }
 
+  html,
+  body,
+  .container {
+    min-height: 0 !important;
+    height: auto !important;
+  }
+
   body {
     background: white;
     width: 58mm;
     margin: 0;
     padding: 0;
     color: #000;
+    display: block;
   }
 
   .container {
@@ -676,11 +684,13 @@ button:disabled {
     max-width: 58mm;
     margin: 0;
     padding: 0;
+    display: block;
   }
 
   h1,
   .subtitle,
   .app-version,
+  .active-rotiseria,
   .status,
   .form-panel,
   .no-print {
@@ -697,6 +707,8 @@ button:disabled {
     max-width: 58mm;
     font-size: 11px;
     line-height: 1.25;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   .ticket h2 {

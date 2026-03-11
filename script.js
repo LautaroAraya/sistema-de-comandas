@@ -1,5 +1,6 @@
 const form = document.getElementById("comanda-form");
 const printBtn = document.getElementById("print-btn");
+const printTestBtn = document.getElementById("print-test-btn");
 const statusEl = document.getElementById("status");
 const quickLogoutBtn = document.getElementById("quick-logout-btn");
 const toastContainerEl = document.getElementById("toast-container");
@@ -786,6 +787,127 @@ function renderTicket(data) {
     ? data.estadoTransferencia || "Pendiente de pago"
     : "-";
   printBtn.disabled = !data.fecha;
+  printTestBtn.disabled = !data.fecha;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function getPrintableTicketStyles(simpleMode) {
+  return `
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: #fff; color: #000; font-family: "Segoe UI", Tahoma, sans-serif; }
+    .ticket { width: 58mm; max-width: 58mm; padding: ${simpleMode ? "1.5mm" : "2mm"}; font-size: ${simpleMode ? "10px" : "11px"}; line-height: ${simpleMode ? "1.15" : "1.25"}; }
+    .ticket h2 { margin: ${simpleMode ? "0 0 2px" : "0 0 4px"}; padding-bottom: ${simpleMode ? "2px" : "0"}; text-align: ${simpleMode ? "center" : "left"}; font-size: ${simpleMode ? "12px" : "14px"}; border-bottom: ${simpleMode ? "1px dashed #000" : "none"}; }
+    .ticket-business { border-bottom: 1px dashed #000; padding-bottom: ${simpleMode ? "2px" : "4px"}; margin-bottom: ${simpleMode ? "2px" : "4px"}; display: grid; gap: 2px; }
+    .ticket-business strong { font-size: ${simpleMode ? "11px" : "12px"}; }
+    .ticket-business div { font-size: ${simpleMode ? "9px" : "10px"}; }
+    .ticket-row { display: flex; justify-content: space-between; gap: 6px; padding: ${simpleMode ? "1px 0" : "2px 0"}; }
+    .ticket-row span { color: #333; }
+    .ticket-row strong { text-align: right; white-space: pre-wrap; word-break: break-word; }
+    .ticket-row.align-start { align-items: flex-start; }
+  `;
+}
+
+function buildPrintableTicketMarkup(ticket, simpleMode, isTestPrint = false) {
+  const showTransferStatus = ticket.pago === "Transferencia";
+  const transferStatus = showTransferStatus
+    ? ticket.estadoTransferencia || "Pendiente de pago"
+    : "-";
+
+  return `
+    <section class="ticket">
+      <h2>${isTestPrint ? "Comanda - Prueba" : "Comanda"}</h2>
+      <div class="ticket-business">
+        <strong>${escapeHtml(businessPreview.nombre.textContent || "Rotiseria")}</strong>
+        <div>${escapeHtml(businessPreview.telefono.textContent || "Tel: -")}</div>
+        <div>${escapeHtml(businessPreview.direccion.textContent || "Direccion: -")}</div>
+      </div>
+      <div class="ticket-row"><span>N comanda:</span><strong>${escapeHtml(ticket.numeroComanda ? formatOrderNumber(ticket.numeroComanda) : "-")}</strong></div>
+      <div class="ticket-row"><span>Fecha:</span><strong>${escapeHtml(ticket.fecha || "-")}</strong></div>
+      <div class="ticket-row"><span>Cliente:</span><strong>${escapeHtml(ticket.cliente || "-")}</strong></div>
+      <div class="ticket-row"><span>Telefono:</span><strong>${escapeHtml(ticket.telefono || "-")}</strong></div>
+      <div class="ticket-row"><span>Direccion:</span><strong>${escapeHtml(ticket.direccion || "-")}</strong></div>
+      <div class="ticket-row"><span>Horario:</span><strong>${escapeHtml(ticket.horario || "-")}</strong></div>
+      <div class="ticket-row align-start"><span>Pedido:</span><strong>${escapeHtml(ticket.pedido || "-")}</strong></div>
+      <div class="ticket-row"><span>Total:</span><strong>${escapeHtml(ticket.total ? money(ticket.total) : "-")}</strong></div>
+      <div class="ticket-row"><span>Paga con:</span><strong>${escapeHtml(ticket.pago || "-")}</strong></div>
+      ${showTransferStatus ? `<div class="ticket-row"><span>Estado transf.:</span><strong>${escapeHtml(transferStatus)}</strong></div>` : ""}
+    </section>
+  `;
+}
+
+function estimatePrintableTicketHeightMm(ticket, simpleMode, isTestPrint = false) {
+  const measurementHost = document.createElement("div");
+  measurementHost.style.position = "fixed";
+  measurementHost.style.left = "-9999px";
+  measurementHost.style.top = "0";
+  measurementHost.style.visibility = "hidden";
+  measurementHost.style.pointerEvents = "none";
+  measurementHost.style.width = "58mm";
+  measurementHost.innerHTML = `<style>${getPrintableTicketStyles(simpleMode)}</style>${buildPrintableTicketMarkup(ticket, simpleMode, isTestPrint)}`;
+  document.body.appendChild(measurementHost);
+  const heightPx = measurementHost.scrollHeight;
+  measurementHost.remove();
+  const heightMm = (heightPx * 25.4) / 96;
+  return Math.max(70, Math.ceil(heightMm + 6));
+}
+
+function buildPrintableTicketHtml(ticket, simpleMode, pageHeightMm, isTestPrint = false) {
+  return `<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${isTestPrint ? "Impresion de prueba" : "Comanda"}</title>
+    <style>
+      @page { size: 58mm ${pageHeightMm}mm; margin: 0; }
+      ${getPrintableTicketStyles(simpleMode)}
+    </style>
+  </head>
+  <body>
+    ${buildPrintableTicketMarkup(ticket, simpleMode, isTestPrint)}
+  </body>
+</html>`;
+}
+
+function printTicketUsingFrame(ticket, isTestPrint = false) {
+  const simpleMode = Boolean(simpleModeEl.checked);
+  const pageHeightMm = estimatePrintableTicketHeightMm(ticket, simpleMode, isTestPrint);
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  iframe.setAttribute("aria-hidden", "true");
+
+  iframe.addEventListener("load", () => {
+    const frameWindow = iframe.contentWindow;
+    if (!frameWindow) {
+      iframe.remove();
+      setStatus("No se pudo abrir la impresion", true, true);
+      return;
+    }
+
+    frameWindow.focus();
+    window.setTimeout(() => {
+      frameWindow.print();
+      window.setTimeout(() => {
+        iframe.remove();
+      }, 1500);
+    }, 80);
+  });
+
+  iframe.srcdoc = buildPrintableTicketHtml(ticket, simpleMode, pageHeightMm, isTestPrint);
+  document.body.appendChild(iframe);
 }
 
 function setTicketVisibility(visible) {
@@ -820,6 +942,7 @@ function loadProfileData() {
     const lastTicketRaw = localStorage.getItem(keyFor(PROFILE_BASE_KEYS.LAST_TICKET));
     if (lastTicketRaw) {
       printBtn.disabled = false;
+      printTestBtn.disabled = false;
     }
 
     const simplePrintRaw = localStorage.getItem(keyFor(PROFILE_BASE_KEYS.PRINT_MODE));
@@ -1254,6 +1377,7 @@ form.addEventListener("submit", (event) => {
     localStorage.setItem(keyFor(PROFILE_BASE_KEYS.LAST_TICKET), JSON.stringify(updatedTicket));
     editingPrintedTicketId = null;
     printBtn.disabled = false;
+    printTestBtn.disabled = false;
     setTicketVisibility(false);
     renderHistory();
     setStatus("Comanda actualizada", false, true);
@@ -1271,6 +1395,7 @@ form.addEventListener("submit", (event) => {
   saveDraft();
   setTicketVisibility(false);
   printBtn.disabled = false;
+  printTestBtn.disabled = false;
   setStatus("Comanda generada. Se mostrará al imprimir.", false, true);
 });
 
@@ -1296,7 +1421,24 @@ printBtn.addEventListener("click", () => {
   } else if (saveResult.status === "duplicate") {
     setStatus("Comanda ya guardada en historial. Se imprime sin duplicar registro.", false, true);
   }
-  window.print();
+  printTicketUsingFrame(ticket, false);
+});
+
+printTestBtn.addEventListener("click", () => {
+  const raw = localStorage.getItem(keyFor(PROFILE_BASE_KEYS.LAST_TICKET));
+  if (!raw) {
+    setStatus("Primero genera una comanda", true, true);
+    return;
+  }
+
+  const ticket = JSON.parse(raw);
+  if (!ticket.fecha) {
+    setStatus("La comanda no es valida para imprimir", true, true);
+    return;
+  }
+
+  printTicketUsingFrame(ticket, true);
+  setStatus("Impresion de prueba enviada", false, true);
 });
 
 form.addEventListener("reset", () => {
