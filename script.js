@@ -1089,10 +1089,15 @@ function renderHistory() {
         return haystack.includes(query);
       })
     : monthItems;
-  const monthTotal = monthItems
-    .filter((item) => !item.cancelled)
+  const activeMonthItems = monthItems.filter((item) => !item.cancelled);
+  const monthTransferTotal = activeMonthItems
+    .filter((item) => item.pago === "Transferencia")
     .reduce((sum, item) => sum + parseAmount(item.total), 0);
-  monthlyReportEl.textContent = `Ingreso de ventas del mes: ${money(monthTotal)}`;
+  const monthCashTotal = activeMonthItems
+    .filter((item) => item.pago === "Efectivo")
+    .reduce((sum, item) => sum + parseAmount(item.total), 0);
+  const monthFinalTotal = monthTransferTotal + monthCashTotal;
+  monthlyReportEl.textContent = `Ingreso del mes · Transferencias: ${money(monthTransferTotal)} · Efectivo: ${money(monthCashTotal)} · Total final: ${money(monthFinalTotal)}`;
 
   if (filtered.length === 0) {
     historySummaryEl.textContent = query
