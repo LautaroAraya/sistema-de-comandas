@@ -1047,12 +1047,18 @@ function renderDailySummary() {
     isSameLocalDay(new Date(item.printedAt), now)
   );
   const activeToday = todayItems.filter((item) => !item.cancelled);
-  const totalToday = activeToday.reduce((sum, item) => sum + parseAmount(item.total), 0);
+  const transferTodayTotal = activeToday
+    .filter((item) => item.pago === "Transferencia")
+    .reduce((sum, item) => sum + parseAmount(item.total), 0);
+  const cashTodayTotal = activeToday
+    .filter((item) => item.pago === "Efectivo")
+    .reduce((sum, item) => sum + parseAmount(item.total), 0);
+  const totalToday = transferTodayTotal + cashTodayTotal;
   const pendingTransfers = activeToday.filter(
     (item) => item.pago === "Transferencia" && item.estadoTransferencia !== "Ya pagó"
   ).length;
 
-  dailyReportEl.textContent = `Hoy: ${activeToday.length} comandas activas · Ventas ${money(totalToday)} · Transferencias pendientes ${pendingTransfers}`;
+  dailyReportEl.textContent = `Hoy: ${activeToday.length} comandas activas · Transferencias: ${money(transferTodayTotal)} · Efectivo: ${money(cashTodayTotal)} · Total final: ${money(totalToday)} · Transferencias pendientes ${pendingTransfers}`;
 }
 
 function getPaymentBadgeData(item) {
