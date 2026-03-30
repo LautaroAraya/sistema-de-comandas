@@ -193,9 +193,18 @@
               <textarea id="pedido" rows="4" required></textarea>
             </label>
 
-            <label class="full-width">
+            <label>
+              Envío
+              <select id="envio" required>
+                <option value="" disabled selected>Seleccionar...</option>
+                <option value="Busca">Retira en local</option>
+                <option value="Delivery">Delivery</option>
+              </select>
+            </label>
+
+            <label class="delivery-address-field" id="delivery-address-field">
               Dirección
-              <input type="text" id="direccion" required />
+              <input type="text" id="direccion" />
             </label>
 
             <label>
@@ -272,6 +281,10 @@
           <strong id="v-telefono">-</strong>
         </div>
         <div class="ticket-row">
+          <span>Envío:</span>
+          <strong id="v-envio">-</strong>
+        </div>
+        <div class="ticket-row" id="direccion-row">
           <span>Dirección:</span>
           <strong id="v-direccion">-</strong>
         </div>
@@ -315,6 +328,7 @@
         <div class="daily-report" id="daily-report">Hoy: 0 comandas activas · Transferencias: $0,00 · Efectivo: $0,00 · Total final: $0,00 · Transferencias pendientes 0</div>
         <p class="history-summary" id="history-summary">Sin comandas impresas en el mes seleccionado.</p>
         <div class="monthly-report" id="monthly-report">Ingreso del mes · Transferencias: $0,00 · Efectivo: $0,00 · Total final: $0,00</div>
+        <div class="weekly-report" id="weekly-report">Ventas por semana: sin datos en el mes seleccionado.</div>
         <div id="history-list" class="history-list"></div>
       </section>
 

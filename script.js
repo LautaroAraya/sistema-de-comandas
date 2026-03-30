@@ -27,6 +27,7 @@ const clearHistorySearchBtn = document.getElementById("clear-history-search-btn"
 const historyListEl = document.getElementById("history-list");
 const historySummaryEl = document.getElementById("history-summary");
 const monthlyReportEl = document.getElementById("monthly-report");
+const weeklyReportEl = document.getElementById("weekly-report");
 const dailyReportEl = document.getElementById("daily-report");
 const exportCsvBtn = document.getElementById("export-csv-btn");
 const resetBusinessBtn = document.getElementById("reset-business-btn");
@@ -41,6 +42,8 @@ const profileUserEl = document.getElementById("perfil-usuario");
 const profilePasswordEl = document.getElementById("perfil-password");
 const transferStatusFieldEl = document.getElementById("transfer-status-field");
 const transferStatusRowEl = document.getElementById("transfer-status-row");
+const deliveryAddressFieldEl = document.getElementById("delivery-address-field");
+const direccionRowEl = document.getElementById("direccion-row");
 const ticketPanelEl = document.getElementById("ticket");
 const businessFields = {
   nombre: document.getElementById("negocio-nombre"),
@@ -86,6 +89,7 @@ const fields = {
   cliente: document.getElementById("cliente"),
   telefono: document.getElementById("telefono"),
   pedido: document.getElementById("pedido"),
+  envio: document.getElementById("envio"),
   direccion: document.getElementById("direccion"),
   horario: document.getElementById("horario"),
   total: document.getElementById("total"),
@@ -98,6 +102,7 @@ const preview = {
   fecha: document.getElementById("v-fecha"),
   cliente: document.getElementById("v-cliente"),
   telefono: document.getElementById("v-telefono"),
+  envio: document.getElementById("v-envio"),
   pedido: document.getElementById("v-pedido"),
   direccion: document.getElementById("v-direccion"),
   horario: document.getElementById("v-horario"),
@@ -645,6 +650,98 @@ function monthValue(date) {
   return `${year}-${month}`;
 }
 
+function startOfWeek(date) {
+  const result = new Date(date);
+  const day = result.getDay();
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  result.setDate(result.getDate() + diffToMonday);
+  result.setHours(0, 0, 0, 0);
+  return result;
+}
+
+function endOfWeek(date) {
+  const result = startOfWeek(date);
+  result.setDate(result.getDate() + 6);
+  result.setHours(23, 59, 59, 999);
+  return result;
+}
+
+function formatShortDate(dateInput) {
+  return new Date(dateInput).toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+  });
+}
+
+function renderWeeklySummary(monthItems) {
+  const activeItems = monthItems.filter((item) => !item.cancelled);
+
+  if (activeItems.length === 0) {
+    weeklyReportEl.textContent = "Ventas por semana: sin ventas activas en el mes seleccionado.";
+    return;
+  }
+
+  const weeklyGroups = activeItems.reduce((acc, item) => {
+    const printedDate = new Date(item.printedAt);
+    const weekStart = startOfWeek(printedDate);
+    const weekEnd = endOfWeek(printedDate);
+    const weekKey = weekStart.toISOString().slice(0, 10);
+
+    if (!acc[weekKey]) {
+      acc[weekKey] = {
+        start: weekStart,
+        end: weekEnd,
+        count: 0,
+        transferTotal: 0,
+        cashTotal: 0,
+      };
+    }
+
+    acc[weekKey].count += 1;
+    if (item.pago === "Transferencia") {
+      acc[weekKey].transferTotal += parseAmount(item.total);
+    } else {
+      acc[weekKey].cashTotal += parseAmount(item.total);
+    }
+
+    return acc;
+  }, {});
+
+  const rows = Object.values(weeklyGroups)
+    .sort((a, b) => b.start - a.start)
+    .map((week) => {
+      const total = week.transferTotal + week.cashTotal;
+      return `<div class="weekly-report-item">Semana ${formatShortDate(week.start)} al ${formatShortDate(
+        week.end
+      )} · ${week.count} venta(s) · Transferencias: ${money(week.transferTotal)} · Efectivo: ${money(
+        week.cashTotal
+      )} · Total: ${money(total)}</div>`;
+    })
+    .join("");
+
+  weeklyReportEl.innerHTML = `<div>Ventas por semana</div>${rows}`;
+}
+
+function getEnvioLabel(value) {
+  if (value === "Busca") {
+    return "Retira en local";
+  }
+
+  return value || "-";
+}
+
+function getShippingBadgeData(data) {
+  if (isDeliveryOrder(data)) {
+    return { label: "Delivery", className: "delivery" };
+  }
+
+  if (data.envio) {
+    return { label: getEnvioLabel(data.envio), className: "pickup" };
+  }
+
+  return { label: "-", className: "unknown" };
+}
+
 function formatDateTime(dateInput) {
   return new Date(dateInput).toLocaleString("es-AR", {
     day: "2-digit",
@@ -660,6 +757,7 @@ function readFormValues() {
     cliente: fields.cliente.value.trim(),
     telefono: fields.telefono.value.trim(),
     pedido: fields.pedido.value.trim(),
+    envio: fields.envio.value,
     direccion: fields.direccion.value.trim(),
     horario: fields.horario.value,
     total: fields.total.value,
@@ -686,12 +784,32 @@ function writeFormValues(values) {
   fields.cliente.value = values.cliente || "";
   fields.telefono.value = values.telefono || "";
   fields.pedido.value = values.pedido || "";
+  fields.envio.value = values.envio || (values.direccion ? "Delivery" : "");
   fields.direccion.value = values.direccion || "";
   fields.horario.value = values.horario || "";
   fields.total.value = formatAmountForInput(values.total || "");
   fields.pago.value = values.pago || "";
   fields.estadoTransferencia.value = values.estadoTransferencia || "";
+  updateDeliveryAddressVisibility();
   updateTransferStatusVisibility();
+}
+
+function isDeliveryOrder(data) {
+  if (data.envio) {
+    return data.envio === "Delivery";
+  }
+
+  return Boolean(data.direccion);
+}
+
+function updateDeliveryAddressVisibility() {
+  const isDelivery = fields.envio.value === "Delivery";
+  deliveryAddressFieldEl.classList.toggle("visible", isDelivery);
+  fields.direccion.required = isDelivery;
+
+  if (!isDelivery) {
+    fields.direccion.value = "";
+  }
 }
 
 function updateTransferStatusVisibility() {
@@ -770,14 +888,18 @@ function saveDraft() {
 }
 
 function renderTicket(data) {
+  const shippingBadge = getShippingBadgeData(data);
   preview.numeroComanda.textContent = data.numeroComanda
     ? formatOrderNumber(data.numeroComanda)
     : "-";
   preview.fecha.textContent = data.fecha || "-";
   preview.cliente.textContent = data.cliente || "-";
   preview.telefono.textContent = data.telefono || "-";
+  preview.envio.textContent = shippingBadge.label;
   preview.pedido.textContent = data.pedido || "-";
-  preview.direccion.textContent = data.direccion || "-";
+  const showAddress = isDeliveryOrder(data);
+  direccionRowEl.style.display = showAddress ? "flex" : "none";
+  preview.direccion.textContent = showAddress ? data.direccion || "-" : "-";
   preview.horario.textContent = data.horario || "-";
   preview.total.textContent = data.total ? money(data.total) : "-";
   preview.pago.textContent = data.pago || "-";
@@ -817,6 +939,8 @@ function getPrintableTicketStyles(simpleMode) {
 
 function buildPrintableTicketMarkup(ticket, simpleMode, isTestPrint = false) {
   const showTransferStatus = ticket.pago === "Transferencia";
+  const shippingBadge = getShippingBadgeData(ticket);
+  const showAddress = isDeliveryOrder(ticket);
   const transferStatus = showTransferStatus
     ? ticket.estadoTransferencia || "Pendiente de pago"
     : "-";
@@ -833,7 +957,8 @@ function buildPrintableTicketMarkup(ticket, simpleMode, isTestPrint = false) {
       <div class="ticket-row"><span>Fecha:</span><strong>${escapeHtml(ticket.fecha || "-")}</strong></div>
       <div class="ticket-row"><span>Cliente:</span><strong>${escapeHtml(ticket.cliente || "-")}</strong></div>
       <div class="ticket-row"><span>Telefono:</span><strong>${escapeHtml(ticket.telefono || "-")}</strong></div>
-      <div class="ticket-row"><span>Direccion:</span><strong>${escapeHtml(ticket.direccion || "-")}</strong></div>
+      <div class="ticket-row"><span>Envio:</span><strong>${escapeHtml(shippingBadge.label)}</strong></div>
+      ${showAddress ? `<div class="ticket-row"><span>Direccion:</span><strong>${escapeHtml(ticket.direccion || "-")}</strong></div>` : ""}
       <div class="ticket-row"><span>Horario:</span><strong>${escapeHtml(ticket.horario || "-")}</strong></div>
       <div class="ticket-row align-start"><span>Pedido:</span><strong>${escapeHtml(ticket.pedido || "-")}</strong></div>
       <div class="ticket-row"><span>Total:</span><strong>${escapeHtml(ticket.total ? money(ticket.total) : "-")}</strong></div>
@@ -1078,6 +1203,7 @@ function renderHistory() {
   const query = historySearchEl.value.trim().toLowerCase();
   clearHistorySearchBtn.disabled = query.length === 0;
   const monthItems = getTicketsByMonth(selectedMonth);
+  renderWeeklySummary(monthItems);
   const filtered = query
     ? monthItems.filter((item) => {
         const orderNumber = item.numeroComanda ? formatOrderNumber(item.numeroComanda) : "";
@@ -1085,6 +1211,7 @@ function renderHistory() {
           orderNumber,
           item.cliente,
           item.telefono,
+          item.envio,
           item.direccion,
           item.pedido,
           item.pago,
@@ -1114,16 +1241,16 @@ function renderHistory() {
   }
 
   const activeItems = filtered.filter((item) => !item.cancelled);
-  const cancelledItems = filtered.filter((item) => item.cancelled);
   const totalMes = activeItems.reduce((sum, item) => sum + parseAmount(item.total), 0);
-  historySummaryEl.textContent = `${activeItems.length} activa(s), ${cancelledItems.length} cancelada(s) · Mostrando ${filtered.length} de ${monthItems.length} · Total ${money(totalMes)}`;
+  historySummaryEl.textContent = `${activeItems.length} activa(s) · Mostrando ${filtered.length} de ${monthItems.length} · Total ${money(totalMes)}`;
 
   historyListEl.innerHTML = filtered
     .map((item) => {
       const paymentBadge = getPaymentBadgeData(item);
+      const shippingBadge = getShippingBadgeData(item);
 
       return `
-        <article class="history-item${item.cancelled ? " cancelled" : ""}">
+        <article class="history-item shipping-${shippingBadge.className}${item.cancelled ? " cancelled" : ""}">
           <div class="history-item-head">
             <div class="history-item-title">
               <span>${
@@ -1132,6 +1259,7 @@ function renderHistory() {
                   : item.cliente
               }</span>
               <span class="payment-badge ${paymentBadge.className}">${paymentBadge.label}</span>
+              <span class="shipping-badge ${shippingBadge.className}">${shippingBadge.label}</span>
               <div class="history-actions">
                 <button class="history-edit-btn" type="button" data-action="edit" data-ticket-id="${item.ticketId}">Editar</button>
                 <button class="history-delete-btn" type="button" data-action="delete" data-ticket-id="${item.ticketId}">Eliminar</button>
@@ -1142,7 +1270,8 @@ function renderHistory() {
           <div class="history-item-body">
             <div>Impresa: ${formatDateTime(item.printedAt)}</div>
             <div>Tel: ${item.telefono}</div>
-            <div>Dirección: ${item.direccion}</div>
+            <div>Envío: ${shippingBadge.label}</div>
+            <div>Dirección: ${isDeliveryOrder(item) ? item.direccion || "-" : "-"}</div>
             <div>Horario: ${item.horario}</div>
             <div>Pago: ${item.pago}</div>
             <div>Estado transferencia: ${
@@ -1212,6 +1341,7 @@ function exportMonthToCsv() {
     "fecha_impresion",
     "cliente",
     "telefono",
+    "envio",
     "direccion",
     "horario",
     "pedido",
@@ -1226,7 +1356,8 @@ function exportMonthToCsv() {
     formatDateTime(item.printedAt),
     item.cliente,
     item.telefono,
-    item.direccion,
+    item.envio || "",
+    isDeliveryOrder(item) ? item.direccion || "" : "",
     item.horario,
     item.pedido,
     parseAmount(item.total).toFixed(2),
@@ -1455,6 +1586,8 @@ printTestBtn.addEventListener("click", () => {
 form.addEventListener("reset", () => {
   setTimeout(() => {
     editingPrintedTicketId = null;
+    updateDeliveryAddressVisibility();
+    updateTransferStatusVisibility();
     renderTicket({});
     setTicketVisibility(false);
     localStorage.removeItem(keyFor(PROFILE_BASE_KEYS.DRAFT));
@@ -1486,6 +1619,7 @@ resetBackgroundBtn.addEventListener("click", resetBackgroundGradient);
 
 fields.total.addEventListener("input", handleTotalInput);
 fields.total.addEventListener("blur", handleTotalInput);
+fields.envio.addEventListener("change", updateDeliveryAddressVisibility);
 fields.pago.addEventListener("change", updateTransferStatusVisibility);
 
 simpleModeEl.addEventListener("change", () => {

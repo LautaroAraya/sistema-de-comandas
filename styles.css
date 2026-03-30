@@ -261,6 +261,14 @@ label {
   max-width: 260px;
 }
 
+.delivery-address-field {
+  display: none;
+}
+
+.delivery-address-field.visible {
+  display: flex;
+}
+
 input,
 textarea,
 select,
@@ -498,6 +506,24 @@ button:disabled {
   font-weight: 700;
 }
 
+.weekly-report {
+  margin-top: 8px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  background: #fffbeb;
+  color: #92400e;
+  font-weight: 700;
+  display: grid;
+  gap: 6px;
+}
+
+.weekly-report-item {
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .daily-report {
   margin-top: 10px;
   margin-bottom: 8px;
@@ -519,6 +545,16 @@ button:disabled {
   border-radius: 8px;
   padding: 10px;
   background: #f9fafb;
+}
+
+.history-item.shipping-delivery {
+  border-left: 4px solid #86efac;
+  background: #f7fff8;
+}
+
+.history-item.shipping-pickup {
+  border-left: 4px solid #93c5fd;
+  background: #f8fbff;
 }
 
 .history-item.cancelled {
@@ -561,6 +597,29 @@ button:disabled {
 .payment-badge.paid {
   background: #dcfce7;
   color: #166534;
+}
+
+.shipping-badge {
+  width: fit-content;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.shipping-badge.delivery {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.shipping-badge.pickup {
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+
+.shipping-badge.unknown {
+  background: #e5e7eb;
+  color: #374151;
 }
 
 .history-delete-btn {
