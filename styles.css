@@ -535,6 +535,18 @@ button:disabled {
   font-weight: 700;
 }
 
+.daily-report-title {
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.daily-report-item {
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .history-list {
   display: grid;
   gap: 10px;

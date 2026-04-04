@@ -1166,7 +1166,15 @@ function getTicketIdentity(ticket) {
   ].join("|");
 }
 
-function renderDailySummary() {
+function formatDayKey(dateInput) {
+  const date = new Date(dateInput);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function renderDailySummary(monthItems = []) {
   const now = new Date();
   const todayItems = getPrintedTickets().filter((item) =>
     isSameLocalDay(new Date(item.printedAt), now)
@@ -1183,7 +1191,41 @@ function renderDailySummary() {
     (item) => item.pago === "Transferencia" && item.estadoTransferencia !== "Ya pagó"
   ).length;
 
-  dailyReportEl.textContent = `Hoy: ${activeToday.length} comandas activas · Transferencias: ${money(transferTodayTotal)} · Efectivo: ${money(cashTodayTotal)} · Total final: ${money(totalToday)} · Transferencias pendientes ${pendingTransfers}`;
+  const activeMonthItems = monthItems.filter((item) => !item.cancelled);
+  const groupedByDay = activeMonthItems.reduce((acc, item) => {
+    const dayKey = formatDayKey(item.printedAt);
+    if (!acc[dayKey]) {
+      acc[dayKey] = {
+        date: new Date(item.printedAt),
+        total: 0,
+        delivery: 0,
+        pickup: 0,
+      };
+    }
+
+    acc[dayKey].total += 1;
+    if (isDeliveryOrder(item)) {
+      acc[dayKey].delivery += 1;
+    } else {
+      acc[dayKey].pickup += 1;
+    }
+
+    return acc;
+  }, {});
+
+  const dayRows = Object.values(groupedByDay)
+    .sort((a, b) => b.date - a.date)
+    .map(
+      (day) =>
+        `<div class="daily-report-item">${formatShortDate(day.date)} · ${day.total} comanda(s) · Delivery: ${day.delivery} · Retira en local: ${day.pickup}</div>`
+    )
+    .join("");
+
+  const byDayMarkup = dayRows
+    ? `<div class="daily-report-title">Por día (mes seleccionado)</div>${dayRows}`
+    : '<div class="daily-report-item">Por día (mes seleccionado): sin comandas activas.</div>';
+
+  dailyReportEl.innerHTML = `<div>Hoy: ${activeToday.length} comandas activas · Transferencias: ${money(transferTodayTotal)} · Efectivo: ${money(cashTodayTotal)} · Total final: ${money(totalToday)} · Transferencias pendientes ${pendingTransfers}</div>${byDayMarkup}`;
 }
 
 function getPaymentBadgeData(item) {
@@ -1198,11 +1240,11 @@ function getPaymentBadgeData(item) {
 }
 
 function renderHistory() {
-  renderDailySummary();
   const selectedMonth = historyMonthEl.value;
   const query = historySearchEl.value.trim().toLowerCase();
   clearHistorySearchBtn.disabled = query.length === 0;
   const monthItems = getTicketsByMonth(selectedMonth);
+  renderDailySummary(monthItems);
   renderWeeklySummary(monthItems);
   const filtered = query
     ? monthItems.filter((item) => {
