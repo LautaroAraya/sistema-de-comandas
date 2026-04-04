@@ -30,6 +30,7 @@ const monthlyReportEl = document.getElementById("monthly-report");
 const weeklyReportEl = document.getElementById("weekly-report");
 const dailyReportEl = document.getElementById("daily-report");
 const exportCsvBtn = document.getElementById("export-csv-btn");
+const printReportBtn = document.getElementById("print-report-btn");
 const resetBusinessBtn = document.getElementById("reset-business-btn");
 const saveProfileAuthBtn = document.getElementById("save-profile-auth-btn");
 const exportProfileBackupBtn = document.getElementById("export-profile-backup-btn");
@@ -630,7 +631,8 @@ function money(value) {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: "ARS",
-    minimumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(parseAmount(value));
 }
 
@@ -1402,7 +1404,7 @@ function exportMonthToCsv() {
     isDeliveryOrder(item) ? item.direccion || "" : "",
     item.horario,
     item.pedido,
-    parseAmount(item.total).toFixed(2),
+    String(Math.round(parseAmount(item.total))),
     item.pago,
     item.estadoTransferencia || "",
     item.cancelled ? "Cancelada" : "Activa",
@@ -1426,6 +1428,190 @@ function exportMonthToCsv() {
   URL.revokeObjectURL(url);
 
   setStatus("CSV mensual exportado correctamente", false, true);
+}
+
+function monthLabelFromValue(value) {
+  const monthDate = new Date(`${value}-01T00:00:00`);
+  if (Number.isNaN(monthDate.getTime())) {
+    return value;
+  }
+
+  return monthDate.toLocaleDateString("es-AR", {
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function buildWeeklyReportRows(items) {
+  const groupedByWeek = items.reduce((acc, item) => {
+    const printedDate = new Date(item.printedAt);
+    const weekStart = startOfWeek(printedDate);
+    const weekEnd = endOfWeek(printedDate);
+    const weekKey = weekStart.toISOString().slice(0, 10);
+
+    if (!acc[weekKey]) {
+      acc[weekKey] = {
+        start: weekStart,
+        end: weekEnd,
+        count: 0,
+        total: 0,
+      };
+    }
+
+    acc[weekKey].count += 1;
+    acc[weekKey].total += parseAmount(item.total);
+    return acc;
+  }, {});
+
+  return Object.values(groupedByWeek)
+    .sort((a, b) => b.start - a.start)
+    .map(
+      (week) => `
+        <tr>
+          <td>${escapeHtml(formatShortDate(week.start))} al ${escapeHtml(formatShortDate(week.end))}</td>
+          <td>${week.count}</td>
+          <td>${escapeHtml(money(week.total))}</td>
+        </tr>
+      `
+    )
+    .join("");
+}
+
+function buildFinalReportHtml({
+  selectedMonth,
+  activeItems,
+  transferTotal,
+  cashTotal,
+}) {
+  const totalFinal = transferTotal + cashTotal;
+  const weeklyRows = buildWeeklyReportRows(activeItems);
+  const businessName = businessPreview.nombre.textContent || activeProfileId;
+  const businessPhone = businessPreview.telefono.textContent || "Tel: -";
+  const businessAddress = businessPreview.direccion.textContent || "Direccion: -";
+  const monthLabel = monthLabelFromValue(selectedMonth);
+
+  return `<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reporte final ${escapeHtml(selectedMonth)}</title>
+    <style>
+      @page { size: A4 portrait; margin: 12mm; }
+      * { box-sizing: border-box; }
+      body { margin: 0; color: #111827; font-family: "Segoe UI", Tahoma, sans-serif; font-size: 12px; }
+      .report { display: grid; gap: 10px; }
+      .header h1 { margin: 0; font-size: 20px; }
+      .header p { margin: 2px 0; }
+      .summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .card { border: 1px solid #d1d5db; border-radius: 8px; padding: 8px; }
+      .card strong { display: block; font-size: 13px; margin-bottom: 2px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border: 1px solid #d1d5db; padding: 6px; text-align: left; }
+      th { background: #f3f4f6; font-weight: 700; }
+      .footer { margin-top: 8px; font-size: 11px; color: #4b5563; }
+    </style>
+  </head>
+  <body>
+    <section class="report">
+      <header class="header">
+        <h1>Reporte final mensual</h1>
+        <p><strong>Mes:</strong> ${escapeHtml(monthLabel)}</p>
+        <p><strong>Rotiseria:</strong> ${escapeHtml(businessName)}</p>
+        <p>${escapeHtml(businessPhone)} · ${escapeHtml(businessAddress)}</p>
+      </header>
+
+      <section class="summary">
+        <div class="card">
+          <strong>Resumen</strong>
+          <div>Comandas: ${activeItems.length}</div>
+          <div>Transferencias: ${escapeHtml(money(transferTotal))}</div>
+          <div>Efectivo: ${escapeHtml(money(cashTotal))}</div>
+          <div>Total final: ${escapeHtml(money(totalFinal))}</div>
+        </div>
+      </section>
+
+      <section>
+        <strong>Total por semana</strong>
+        <table>
+          <thead>
+            <tr>
+              <th>Semana</th>
+              <th>Comandas</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              weeklyRows ||
+              '<tr><td colspan="3">Sin comandas activas para el mes seleccionado.</td></tr>'
+            }
+          </tbody>
+        </table>
+      </section>
+
+      <div class="footer">Emitido el ${escapeHtml(formatDateTime(new Date().toISOString()))}</div>
+    </section>
+  </body>
+</html>`;
+}
+
+function printHtmlDocument(html, onErrorMessage) {
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  iframe.setAttribute("aria-hidden", "true");
+
+  iframe.addEventListener("load", () => {
+    const frameWindow = iframe.contentWindow;
+    if (!frameWindow) {
+      iframe.remove();
+      setStatus(onErrorMessage, true, true);
+      return;
+    }
+
+    frameWindow.focus();
+    window.setTimeout(() => {
+      frameWindow.print();
+      window.setTimeout(() => {
+        iframe.remove();
+      }, 1500);
+    }, 80);
+  });
+
+  iframe.srcdoc = html;
+  document.body.appendChild(iframe);
+}
+
+function printFinalReport() {
+  const selectedMonth = historyMonthEl.value;
+  const monthItems = getTicketsByMonth(selectedMonth);
+  if (monthItems.length === 0) {
+    setStatus("No hay comandas para imprimir en ese mes", true, true);
+    return;
+  }
+
+  const activeItems = monthItems.filter((item) => !item.cancelled);
+  const transferTotal = activeItems
+    .filter((item) => item.pago === "Transferencia")
+    .reduce((sum, item) => sum + parseAmount(item.total), 0);
+  const cashTotal = activeItems
+    .filter((item) => item.pago === "Efectivo")
+    .reduce((sum, item) => sum + parseAmount(item.total), 0);
+
+  const html = buildFinalReportHtml({
+    selectedMonth,
+    activeItems,
+    transferTotal,
+    cashTotal,
+  });
+
+  printHtmlDocument(html, "No se pudo abrir la impresion del reporte");
+  setStatus("Reporte final enviado a impresion", false, true);
 }
 
 function savePrintedTicket() {
@@ -1514,6 +1700,57 @@ function setupPasswordToggles() {
       button.setAttribute("aria-pressed", String(isPassword));
       button.setAttribute("aria-label", isPassword ? "Ocultar contraseña" : "Mostrar contraseña");
     });
+  });
+}
+
+function isEditableElement(target) {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  if (target.isContentEditable) {
+    return true;
+  }
+
+  return target.matches("input, textarea, select");
+}
+
+function setupKeyboardShortcuts() {
+  window.addEventListener("keydown", (event) => {
+    const key = event.key.toLowerCase();
+    const target = event.target;
+    const isCtrlOrMeta = event.ctrlKey || event.metaKey;
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      form.reset();
+      return;
+    }
+
+    if (isCtrlOrMeta && key === "p") {
+      event.preventDefault();
+      if (event.shiftKey) {
+        printFinalReport();
+      } else {
+        printBtn.click();
+      }
+      return;
+    }
+
+    if (event.key === "Enter" && !event.shiftKey && !isCtrlOrMeta && !event.altKey) {
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+
+      if (target.matches("textarea")) {
+        return;
+      }
+
+      if (isEditableElement(target) || target.matches("button")) {
+        event.preventDefault();
+        form.requestSubmit();
+      }
+    }
   });
 }
 
@@ -1706,6 +1943,7 @@ historyListEl.addEventListener("click", (event) => {
   }
 });
 exportCsvBtn.addEventListener("click", exportMonthToCsv);
+printReportBtn.addEventListener("click", printFinalReport);
 resetBusinessBtn.addEventListener("click", resetBusinessConfig);
 profileSelectEl.addEventListener("change", () => {
   setActiveProfile(profileSelectEl.value);
@@ -1849,3 +2087,4 @@ if (existingOperatorSession) {
 }
 appVersionEl.textContent = `Versión activa: ${APP_VERSION}`;
 setupPasswordToggles();
+setupKeyboardShortcuts();
