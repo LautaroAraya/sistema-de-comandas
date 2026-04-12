@@ -43,6 +43,11 @@ const profileUserEl = document.getElementById("perfil-usuario");
 const profilePasswordEl = document.getElementById("perfil-password");
 const transferStatusFieldEl = document.getElementById("transfer-status-field");
 const transferStatusRowEl = document.getElementById("transfer-status-row");
+const printCopiesNoticeEl = document.getElementById("print-copies-notice");
+const combinedCashFieldEl = document.getElementById("combined-cash-field");
+const combinedTransferFieldEl = document.getElementById("combined-transfer-field");
+const combinedCashRowEl = document.getElementById("combined-cash-row");
+const combinedTransferRowEl = document.getElementById("combined-transfer-row");
 const deliveryAddressFieldEl = document.getElementById("delivery-address-field");
 const direccionRowEl = document.getElementById("direccion-row");
 const ticketPanelEl = document.getElementById("ticket");
@@ -96,6 +101,8 @@ const fields = {
   total: document.getElementById("total"),
   pago: document.getElementById("pago"),
   estadoTransferencia: document.getElementById("estado-transferencia"),
+  montoEfectivo: document.getElementById("monto-efectivo"),
+  montoTransferencia: document.getElementById("monto-transferencia"),
 };
 
 const preview = {
@@ -110,6 +117,8 @@ const preview = {
   total: document.getElementById("v-total"),
   pago: document.getElementById("v-pago"),
   estadoTransferencia: document.getElementById("v-estado-transferencia"),
+  montoEfectivo: document.getElementById("v-monto-efectivo"),
+  montoTransferencia: document.getElementById("v-monto-transferencia"),
 };
 
 function formatAmountForInput(value) {
@@ -192,6 +201,18 @@ function resetBackgroundGradient() {
 
 function keyFor(baseKey) {
   return `${STORAGE_PREFIX}.${activeProfileId}.${baseKey}`;
+}
+
+function getSessionProfileValue(baseKey) {
+  return sessionStorage.getItem(keyFor(baseKey));
+}
+
+function setSessionProfileValue(baseKey, value) {
+  sessionStorage.setItem(keyFor(baseKey), value);
+}
+
+function removeSessionProfileValue(baseKey) {
+  sessionStorage.removeItem(keyFor(baseKey));
 }
 
 function sanitizeProfileId(value) {
@@ -699,12 +720,10 @@ function renderWeeklySummary(monthItems) {
       };
     }
 
+    const split = getPaymentBreakdown(item);
     acc[weekKey].count += 1;
-    if (item.pago === "Transferencia") {
-      acc[weekKey].transferTotal += parseAmount(item.total);
-    } else {
-      acc[weekKey].cashTotal += parseAmount(item.total);
-    }
+    acc[weekKey].transferTotal += split.transfer;
+    acc[weekKey].cashTotal += split.cash;
 
     return acc;
   }, {});
@@ -744,6 +763,35 @@ function getShippingBadgeData(data) {
   return { label: "-", className: "unknown" };
 }
 
+function hasTransferComponent(paymentMethod) {
+  return paymentMethod === "Transferencia" || paymentMethod === "Combinado";
+}
+
+function isCombinedPayment(paymentMethod) {
+  return paymentMethod === "Combinado";
+}
+
+function getPaymentBreakdown(item) {
+  const total = parseAmount(item.total);
+
+  if (item.pago === "Transferencia") {
+    return { transfer: total, cash: 0 };
+  }
+
+  if (item.pago === "Efectivo") {
+    return { transfer: 0, cash: total };
+  }
+
+  if (item.pago === "Combinado") {
+    return {
+      transfer: parseAmount(item.montoTransferencia),
+      cash: parseAmount(item.montoEfectivo),
+    };
+  }
+
+  return { transfer: 0, cash: 0 };
+}
+
 function formatDateTime(dateInput) {
   return new Date(dateInput).toLocaleString("es-AR", {
     day: "2-digit",
@@ -765,6 +813,8 @@ function readFormValues() {
     total: fields.total.value,
     pago: fields.pago.value,
     estadoTransferencia: fields.estadoTransferencia.value.trim(),
+    montoEfectivo: fields.montoEfectivo.value,
+    montoTransferencia: fields.montoTransferencia.value,
   };
 }
 
@@ -792,8 +842,12 @@ function writeFormValues(values) {
   fields.total.value = formatAmountForInput(values.total || "");
   fields.pago.value = values.pago || "";
   fields.estadoTransferencia.value = values.estadoTransferencia || "";
+  fields.montoEfectivo.value = formatAmountForInput(values.montoEfectivo || "");
+  fields.montoTransferencia.value = formatAmountForInput(values.montoTransferencia || "");
   updateDeliveryAddressVisibility();
   updateTransferStatusVisibility();
+  updateCombinedPaymentVisibility();
+  updatePrintCopiesNotice();
 }
 
 function isDeliveryOrder(data) {
@@ -815,7 +869,7 @@ function updateDeliveryAddressVisibility() {
 }
 
 function updateTransferStatusVisibility() {
-  const isTransfer = fields.pago.value === "Transferencia";
+  const isTransfer = hasTransferComponent(fields.pago.value);
   transferStatusFieldEl.classList.toggle("visible", isTransfer);
   fields.estadoTransferencia.required = isTransfer;
 
@@ -824,9 +878,43 @@ function updateTransferStatusVisibility() {
   }
 }
 
-function showToast(message, isError = false) {
+function updateCombinedPaymentVisibility() {
+  const isCombined = isCombinedPayment(fields.pago.value);
+  combinedCashFieldEl.classList.toggle("visible", isCombined);
+  combinedTransferFieldEl.classList.toggle("visible", isCombined);
+  fields.montoEfectivo.required = isCombined;
+  fields.montoTransferencia.required = isCombined;
+
+  if (!isCombined) {
+    fields.montoEfectivo.value = "";
+    fields.montoTransferencia.value = "";
+  }
+}
+
+function updatePrintCopiesNotice() {
+  if (!printCopiesNoticeEl) {
+    return;
+  }
+
+  if (fields.pago.value === "Efectivo" || fields.pago.value === "Combinado") {
+    printCopiesNoticeEl.textContent = "Se imprimirán 2 copias automáticamente";
+    printCopiesNoticeEl.classList.add("visible");
+    return;
+  }
+
+  if (fields.pago.value === "Transferencia") {
+    printCopiesNoticeEl.textContent = "Se imprimirá 1 copia automáticamente";
+    printCopiesNoticeEl.classList.add("visible");
+    return;
+  }
+
+  printCopiesNoticeEl.textContent = "Seleccioná un método de pago para ver cuántas copias saldrán";
+  printCopiesNoticeEl.classList.add("visible");
+}
+
+function showToast(message, isError = false, variant = "default") {
   const toast = document.createElement("div");
-  toast.className = `toast${isError ? " error" : ""}`;
+  toast.className = `toast${isError ? " error" : ""}${variant === "copies" ? " copies" : ""}`;
   toast.textContent = message;
   toastContainerEl.appendChild(toast);
 
@@ -835,11 +923,11 @@ function showToast(message, isError = false) {
   }, TOAST_DURATION_MS);
 }
 
-function setStatus(message, isError = false, withAlert = false) {
+function setStatus(message, isError = false, withAlert = false, variant = "default") {
   statusEl.textContent = message;
   statusEl.style.color = isError ? "#991b1b" : "#065f46";
   if (withAlert && ACTION_ALERTS_ENABLED) {
-    showToast(message, isError);
+    showToast(message, isError, variant);
   }
 }
 
@@ -885,7 +973,9 @@ function resetBusinessConfig() {
 function saveDraft() {
   const data = readFormValues();
   data.total = formatAmountForInput(data.total);
-  localStorage.setItem(keyFor(PROFILE_BASE_KEYS.DRAFT), JSON.stringify(data));
+  data.montoEfectivo = formatAmountForInput(data.montoEfectivo);
+  data.montoTransferencia = formatAmountForInput(data.montoTransferencia);
+  setSessionProfileValue(PROFILE_BASE_KEYS.DRAFT, JSON.stringify(data));
   setStatus("Borrador guardado automáticamente");
 }
 
@@ -905,11 +995,18 @@ function renderTicket(data) {
   preview.horario.textContent = data.horario || "-";
   preview.total.textContent = data.total ? money(data.total) : "-";
   preview.pago.textContent = data.pago || "-";
-  const isTransfer = data.pago === "Transferencia";
+  const isCombined = isCombinedPayment(data.pago);
+  const isTransfer = hasTransferComponent(data.pago);
   transferStatusRowEl.style.display = isTransfer ? "flex" : "none";
   preview.estadoTransferencia.textContent = isTransfer
     ? data.estadoTransferencia || "Pendiente de pago"
     : "-";
+  combinedCashRowEl.style.display = isCombined ? "flex" : "none";
+  combinedTransferRowEl.style.display = isCombined ? "flex" : "none";
+  preview.montoEfectivo.textContent =
+    isCombined && data.montoEfectivo ? money(data.montoEfectivo) : "-";
+  preview.montoTransferencia.textContent =
+    isCombined && data.montoTransferencia ? money(data.montoTransferencia) : "-";
   printBtn.disabled = !data.fecha;
   printTestBtn.disabled = !data.fecha;
 }
@@ -940,7 +1037,8 @@ function getPrintableTicketStyles(simpleMode) {
 }
 
 function buildPrintableTicketMarkup(ticket, simpleMode, isTestPrint = false) {
-  const showTransferStatus = ticket.pago === "Transferencia";
+  const showTransferStatus = hasTransferComponent(ticket.pago);
+  const showCombinedSplit = isCombinedPayment(ticket.pago);
   const shippingBadge = getShippingBadgeData(ticket);
   const showAddress = isDeliveryOrder(ticket);
   const transferStatus = showTransferStatus
@@ -966,11 +1064,28 @@ function buildPrintableTicketMarkup(ticket, simpleMode, isTestPrint = false) {
       <div class="ticket-row"><span>Total:</span><strong>${escapeHtml(ticket.total ? money(ticket.total) : "-")}</strong></div>
       <div class="ticket-row"><span>Paga con:</span><strong>${escapeHtml(ticket.pago || "-")}</strong></div>
       ${showTransferStatus ? `<div class="ticket-row"><span>Estado transf.:</span><strong>${escapeHtml(transferStatus)}</strong></div>` : ""}
+      ${showCombinedSplit ? `<div class="ticket-row"><span>Efectivo:</span><strong>${escapeHtml(ticket.montoEfectivo ? money(ticket.montoEfectivo) : "-")}</strong></div>` : ""}
+      ${showCombinedSplit ? `<div class="ticket-row"><span>Transferencia:</span><strong>${escapeHtml(ticket.montoTransferencia ? money(ticket.montoTransferencia) : "-")}</strong></div>` : ""}
     </section>
   `;
 }
 
-function estimatePrintableTicketHeightMm(ticket, simpleMode, isTestPrint = false) {
+function getPrintCopies(ticket, isTestPrint = false) {
+  if (isTestPrint) {
+    return 1;
+  }
+
+  return ticket.pago === "Efectivo" || ticket.pago === "Combinado" ? 2 : 1;
+}
+
+function buildPrintableTicketBody(ticket, simpleMode, isTestPrint = false, copies = 1) {
+  return Array.from({ length: copies }, (_, index) => {
+    const cutLine = index < copies - 1 ? '<div class="ticket-cut-line"></div>' : "";
+    return `${buildPrintableTicketMarkup(ticket, simpleMode, isTestPrint)}${cutLine}`;
+  }).join("");
+}
+
+function estimatePrintableTicketHeightMm(ticket, simpleMode, isTestPrint = false, copies = 1) {
   const measurementHost = document.createElement("div");
   measurementHost.style.position = "fixed";
   measurementHost.style.left = "-9999px";
@@ -978,7 +1093,7 @@ function estimatePrintableTicketHeightMm(ticket, simpleMode, isTestPrint = false
   measurementHost.style.visibility = "hidden";
   measurementHost.style.pointerEvents = "none";
   measurementHost.style.width = "58mm";
-  measurementHost.innerHTML = `<style>${getPrintableTicketStyles(simpleMode)}</style>${buildPrintableTicketMarkup(ticket, simpleMode, isTestPrint)}`;
+  measurementHost.innerHTML = `<style>${getPrintableTicketStyles(simpleMode)} .ticket-cut-line { border-top: 1px dashed #000; margin: 2mm 0; }</style>${buildPrintableTicketBody(ticket, simpleMode, isTestPrint, copies)}`;
   document.body.appendChild(measurementHost);
   const heightPx = measurementHost.scrollHeight;
   measurementHost.remove();
@@ -986,7 +1101,7 @@ function estimatePrintableTicketHeightMm(ticket, simpleMode, isTestPrint = false
   return Math.max(70, Math.ceil(heightMm + 6));
 }
 
-function buildPrintableTicketHtml(ticket, simpleMode, pageHeightMm, isTestPrint = false) {
+function buildPrintableTicketHtml(ticket, simpleMode, pageHeightMm, isTestPrint = false, copies = 1) {
   return `<!doctype html>
 <html lang="es">
   <head>
@@ -996,17 +1111,19 @@ function buildPrintableTicketHtml(ticket, simpleMode, pageHeightMm, isTestPrint 
     <style>
       @page { size: 58mm ${pageHeightMm}mm; margin: 0; }
       ${getPrintableTicketStyles(simpleMode)}
+      .ticket-cut-line { border-top: 1px dashed #000; margin: 2mm 0; }
     </style>
   </head>
   <body>
-    ${buildPrintableTicketMarkup(ticket, simpleMode, isTestPrint)}
+    ${buildPrintableTicketBody(ticket, simpleMode, isTestPrint, copies)}
   </body>
 </html>`;
 }
 
 function printTicketUsingFrame(ticket, isTestPrint = false) {
   const simpleMode = Boolean(simpleModeEl.checked);
-  const pageHeightMm = estimatePrintableTicketHeightMm(ticket, simpleMode, isTestPrint);
+  const copies = getPrintCopies(ticket, isTestPrint);
+  const pageHeightMm = estimatePrintableTicketHeightMm(ticket, simpleMode, isTestPrint, copies);
   const iframe = document.createElement("iframe");
   iframe.style.position = "fixed";
   iframe.style.right = "0";
@@ -1033,7 +1150,7 @@ function printTicketUsingFrame(ticket, isTestPrint = false) {
     }, 80);
   });
 
-  iframe.srcdoc = buildPrintableTicketHtml(ticket, simpleMode, pageHeightMm, isTestPrint);
+  iframe.srcdoc = buildPrintableTicketHtml(ticket, simpleMode, pageHeightMm, isTestPrint, copies);
   document.body.appendChild(iframe);
 }
 
@@ -1061,12 +1178,12 @@ function loadProfileData() {
     setTicketVisibility(false);
     historySearchEl.value = "";
 
-    const draftRaw = localStorage.getItem(keyFor(PROFILE_BASE_KEYS.DRAFT));
+    const draftRaw = getSessionProfileValue(PROFILE_BASE_KEYS.DRAFT);
     if (draftRaw) {
       writeFormValues(JSON.parse(draftRaw));
     }
 
-    const lastTicketRaw = localStorage.getItem(keyFor(PROFILE_BASE_KEYS.LAST_TICKET));
+    const lastTicketRaw = getSessionProfileValue(PROFILE_BASE_KEYS.LAST_TICKET);
     if (lastTicketRaw) {
       printBtn.disabled = false;
       printTestBtn.disabled = false;
@@ -1182,15 +1299,18 @@ function renderDailySummary(monthItems = []) {
     isSameLocalDay(new Date(item.printedAt), now)
   );
   const activeToday = todayItems.filter((item) => !item.cancelled);
-  const transferTodayTotal = activeToday
-    .filter((item) => item.pago === "Transferencia")
-    .reduce((sum, item) => sum + parseAmount(item.total), 0);
-  const cashTodayTotal = activeToday
-    .filter((item) => item.pago === "Efectivo")
-    .reduce((sum, item) => sum + parseAmount(item.total), 0);
-  const totalToday = transferTodayTotal + cashTodayTotal;
+  const totalsToday = activeToday.reduce(
+    (acc, item) => {
+      const split = getPaymentBreakdown(item);
+      acc.transfer += split.transfer;
+      acc.cash += split.cash;
+      return acc;
+    },
+    { transfer: 0, cash: 0 }
+  );
+  const totalToday = totalsToday.transfer + totalsToday.cash;
   const pendingTransfers = activeToday.filter(
-    (item) => item.pago === "Transferencia" && item.estadoTransferencia !== "Ya pagó"
+    (item) => hasTransferComponent(item.pago) && item.estadoTransferencia !== "Ya pagó"
   ).length;
 
   const activeMonthItems = monthItems.filter((item) => !item.cancelled);
@@ -1227,10 +1347,17 @@ function renderDailySummary(monthItems = []) {
     ? `<div class="daily-report-title">Por día (mes seleccionado)</div>${dayRows}`
     : '<div class="daily-report-item">Por día (mes seleccionado): sin comandas activas.</div>';
 
-  dailyReportEl.innerHTML = `<div>Hoy: ${activeToday.length} comandas activas · Transferencias: ${money(transferTodayTotal)} · Efectivo: ${money(cashTodayTotal)} · Total final: ${money(totalToday)} · Transferencias pendientes ${pendingTransfers}</div>${byDayMarkup}`;
+  dailyReportEl.innerHTML = `<div>Hoy: ${activeToday.length} comandas activas · Transferencias: ${money(totalsToday.transfer)} · Efectivo: ${money(totalsToday.cash)} · Total final: ${money(totalToday)} · Transferencias pendientes ${pendingTransfers}</div>${byDayMarkup}`;
 }
 
 function getPaymentBadgeData(item) {
+  if (item.pago === "Combinado") {
+    const paid = item.estadoTransferencia === "Ya pagó";
+    return paid
+      ? { label: "Combinado (transferencia paga)", className: "paid" }
+      : { label: "Combinado (transferencia pendiente)", className: "pending" };
+  }
+
   if (item.pago === "Transferencia") {
     const paid = item.estadoTransferencia === "Ya pagó";
     return paid
@@ -1260,6 +1387,8 @@ function renderHistory() {
           item.pedido,
           item.pago,
           item.estadoTransferencia,
+          item.montoEfectivo,
+          item.montoTransferencia,
         ]
           .join(" ")
           .toLowerCase();
@@ -1267,14 +1396,17 @@ function renderHistory() {
       })
     : monthItems;
   const activeMonthItems = monthItems.filter((item) => !item.cancelled);
-  const monthTransferTotal = activeMonthItems
-    .filter((item) => item.pago === "Transferencia")
-    .reduce((sum, item) => sum + parseAmount(item.total), 0);
-  const monthCashTotal = activeMonthItems
-    .filter((item) => item.pago === "Efectivo")
-    .reduce((sum, item) => sum + parseAmount(item.total), 0);
-  const monthFinalTotal = monthTransferTotal + monthCashTotal;
-  monthlyReportEl.textContent = `Ingreso del mes · Transferencias: ${money(monthTransferTotal)} · Efectivo: ${money(monthCashTotal)} · Total final: ${money(monthFinalTotal)}`;
+  const monthTotals = activeMonthItems.reduce(
+    (acc, item) => {
+      const split = getPaymentBreakdown(item);
+      acc.transfer += split.transfer;
+      acc.cash += split.cash;
+      return acc;
+    },
+    { transfer: 0, cash: 0 }
+  );
+  const monthFinalTotal = monthTotals.transfer + monthTotals.cash;
+  monthlyReportEl.textContent = `Ingreso del mes · Transferencias: ${money(monthTotals.transfer)} · Efectivo: ${money(monthTotals.cash)} · Total final: ${money(monthFinalTotal)}`;
 
   if (filtered.length === 0) {
     historySummaryEl.textContent = query
@@ -1319,9 +1451,15 @@ function renderHistory() {
             <div>Horario: ${item.horario}</div>
             <div>Pago: ${item.pago}</div>
             <div>Estado transferencia: ${
-              item.pago === "Transferencia"
+              hasTransferComponent(item.pago)
                 ? item.estadoTransferencia || "Pendiente de pago"
                 : "-"
+            }</div>
+            <div>Efectivo (combinado): ${
+              isCombinedPayment(item.pago) ? money(item.montoEfectivo || 0) : "-"
+            }</div>
+            <div>Transferencia (combinado): ${
+              isCombinedPayment(item.pago) ? money(item.montoTransferencia || 0) : "-"
             }</div>
             <div>Estado comanda: ${item.cancelled ? "Cancelada" : "Activa"}</div>
             <div>Pedido: ${item.pedido}</div>
@@ -1391,6 +1529,8 @@ function exportMonthToCsv() {
     "pedido",
     "total",
     "pago",
+    "monto_efectivo",
+    "monto_transferencia",
     "estado_transferencia",
     "estado_comanda",
   ];
@@ -1406,6 +1546,8 @@ function exportMonthToCsv() {
     item.pedido,
     String(Math.round(parseAmount(item.total))),
     item.pago,
+    item.montoEfectivo || "",
+    item.montoTransferencia || "",
     item.estadoTransferencia || "",
     item.cancelled ? "Cancelada" : "Activa",
   ]);
@@ -1596,18 +1738,21 @@ function printFinalReport() {
   }
 
   const activeItems = monthItems.filter((item) => !item.cancelled);
-  const transferTotal = activeItems
-    .filter((item) => item.pago === "Transferencia")
-    .reduce((sum, item) => sum + parseAmount(item.total), 0);
-  const cashTotal = activeItems
-    .filter((item) => item.pago === "Efectivo")
-    .reduce((sum, item) => sum + parseAmount(item.total), 0);
+  const totals = activeItems.reduce(
+    (acc, item) => {
+      const split = getPaymentBreakdown(item);
+      acc.transfer += split.transfer;
+      acc.cash += split.cash;
+      return acc;
+    },
+    { transfer: 0, cash: 0 }
+  );
 
   const html = buildFinalReportHtml({
     selectedMonth,
     activeItems,
-    transferTotal,
-    cashTotal,
+    transferTotal: totals.transfer,
+    cashTotal: totals.cash,
   });
 
   printHtmlDocument(html, "No se pudo abrir la impresion del reporte");
@@ -1615,7 +1760,7 @@ function printFinalReport() {
 }
 
 function savePrintedTicket() {
-  const raw = localStorage.getItem(keyFor(PROFILE_BASE_KEYS.LAST_TICKET));
+  const raw = getSessionProfileValue(PROFILE_BASE_KEYS.LAST_TICKET);
   if (!raw) {
     return { status: "invalid" };
   }
@@ -1677,6 +1822,18 @@ function handleTotalInput() {
   const formatted = formatAmountForInput(fields.total.value);
   if (fields.total.value !== formatted) {
     fields.total.value = formatted;
+  }
+}
+
+function handleCombinedAmountInput(event) {
+  const field = event.target;
+  if (!(field instanceof HTMLInputElement)) {
+    return;
+  }
+
+  const formatted = formatAmountForInput(field.value);
+  if (field.value !== formatted) {
+    field.value = formatted;
   }
 }
 
@@ -1768,7 +1925,35 @@ form.addEventListener("submit", (event) => {
     return;
   }
 
-  if (fields.pago.value === "Transferencia" && !fields.estadoTransferencia.value.trim()) {
+  if (fields.pago.value === "Efectivo" || fields.pago.value === "Combinado") {
+    setStatus("Se imprimirán 2 copias automáticamente", false, true, "copies");
+  } else if (fields.pago.value === "Transferencia") {
+    setStatus("Se imprimirá 1 copia automáticamente", false, true, "copies");
+  }
+
+  if (isCombinedPayment(fields.pago.value)) {
+    const cashPart = parseAmount(fields.montoEfectivo.value);
+    const transferPart = parseAmount(fields.montoTransferencia.value);
+    const totalAmount = parseAmount(fields.total.value);
+
+    if (cashPart <= 0 || transferPart <= 0) {
+      setStatus("En Combinado debés ingresar montos en efectivo y transferencia", true, true);
+      if (cashPart <= 0) {
+        fields.montoEfectivo.focus();
+      } else {
+        fields.montoTransferencia.focus();
+      }
+      return;
+    }
+
+    if (cashPart + transferPart !== totalAmount) {
+      setStatus("La suma de efectivo y transferencia debe coincidir con el total", true, true);
+      fields.montoEfectivo.focus();
+      return;
+    }
+  }
+
+  if (hasTransferComponent(fields.pago.value) && !fields.estadoTransferencia.value.trim()) {
     setStatus("Completá el estado de transferencia", true, true);
     fields.estadoTransferencia.focus();
     return;
@@ -1795,7 +1980,7 @@ form.addEventListener("submit", (event) => {
 
     printedItems[index] = updatedTicket;
     savePrintedTickets(printedItems);
-    localStorage.setItem(keyFor(PROFILE_BASE_KEYS.LAST_TICKET), JSON.stringify(updatedTicket));
+    setSessionProfileValue(PROFILE_BASE_KEYS.LAST_TICKET, JSON.stringify(updatedTicket));
     editingPrintedTicketId = null;
     printBtn.disabled = false;
     printTestBtn.disabled = false;
@@ -1812,7 +1997,7 @@ form.addEventListener("submit", (event) => {
     createdAt: new Date().toISOString(),
   };
 
-  localStorage.setItem(keyFor(PROFILE_BASE_KEYS.LAST_TICKET), JSON.stringify(ticketData));
+  setSessionProfileValue(PROFILE_BASE_KEYS.LAST_TICKET, JSON.stringify(ticketData));
   saveDraft();
   setTicketVisibility(false);
   printBtn.disabled = false;
@@ -1821,7 +2006,7 @@ form.addEventListener("submit", (event) => {
 });
 
 printBtn.addEventListener("click", () => {
-  const raw = localStorage.getItem(keyFor(PROFILE_BASE_KEYS.LAST_TICKET));
+  const raw = getSessionProfileValue(PROFILE_BASE_KEYS.LAST_TICKET);
   if (!raw) {
     setStatus("Primero generá una comanda", true, true);
     return;
@@ -1846,7 +2031,7 @@ printBtn.addEventListener("click", () => {
 });
 
 printTestBtn.addEventListener("click", () => {
-  const raw = localStorage.getItem(keyFor(PROFILE_BASE_KEYS.LAST_TICKET));
+  const raw = getSessionProfileValue(PROFILE_BASE_KEYS.LAST_TICKET);
   if (!raw) {
     setStatus("Primero genera una comanda", true, true);
     return;
@@ -1867,9 +2052,11 @@ form.addEventListener("reset", () => {
     editingPrintedTicketId = null;
     updateDeliveryAddressVisibility();
     updateTransferStatusVisibility();
+    updateCombinedPaymentVisibility();
+    updatePrintCopiesNotice();
     renderTicket({});
     setTicketVisibility(false);
-    localStorage.removeItem(keyFor(PROFILE_BASE_KEYS.DRAFT));
+    removeSessionProfileValue(PROFILE_BASE_KEYS.DRAFT);
     setStatus("Formulario limpio", false, true);
   }, 0);
 });
@@ -1898,8 +2085,16 @@ resetBackgroundBtn.addEventListener("click", resetBackgroundGradient);
 
 fields.total.addEventListener("input", handleTotalInput);
 fields.total.addEventListener("blur", handleTotalInput);
+fields.montoEfectivo.addEventListener("input", handleCombinedAmountInput);
+fields.montoEfectivo.addEventListener("blur", handleCombinedAmountInput);
+fields.montoTransferencia.addEventListener("input", handleCombinedAmountInput);
+fields.montoTransferencia.addEventListener("blur", handleCombinedAmountInput);
 fields.envio.addEventListener("change", updateDeliveryAddressVisibility);
-fields.pago.addEventListener("change", updateTransferStatusVisibility);
+fields.pago.addEventListener("change", () => {
+  updateTransferStatusVisibility();
+  updateCombinedPaymentVisibility();
+  updatePrintCopiesNotice();
+});
 
 simpleModeEl.addEventListener("change", () => {
   setSimplePrintMode(simpleModeEl.checked);

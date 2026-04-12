@@ -45,6 +45,7 @@
                   <path
                     d="M1 8s2.5-4 7-4 7 4 7 4-2.5 4-7 4-7-4-7-4Z"
                     fill="none"
+              <p class="print-copies-notice" id="print-copies-notice" aria-live="polite"></p>
                     stroke="currentColor"
                     stroke-width="1.5"
                   />
@@ -230,6 +231,7 @@
                 <option value="" disabled selected>Seleccionar...</option>
                 <option value="Efectivo">Efectivo</option>
                 <option value="Transferencia">Transferencia</option>
+                <option value="Combinado">Combinado</option>
               </select>
             </label>
 
@@ -240,6 +242,28 @@
                 <option value="Ya pagó">Ya pagó</option>
                 <option value="Pendiente de pago">Pendiente de pago</option>
               </select>
+            </label>
+
+            <label class="combined-split-field" id="combined-cash-field">
+              Monto en efectivo ($)
+              <input
+                type="text"
+                id="monto-efectivo"
+                inputmode="numeric"
+                pattern="^\d{1,3}(\.\d{3})*$|^\d+$"
+                placeholder="Ej: 5.000"
+              />
+            </label>
+
+            <label class="combined-split-field" id="combined-transfer-field">
+              Monto en transferencia ($)
+              <input
+                type="text"
+                id="monto-transferencia"
+                inputmode="numeric"
+                pattern="^\d{1,3}(\.\d{3})*$|^\d+$"
+                placeholder="Ej: 7.500"
+              />
             </label>
           </div>
 
@@ -307,6 +331,14 @@
         <div class="ticket-row" id="transfer-status-row">
           <span>Estado transf.:</span>
           <strong id="v-estado-transferencia">-</strong>
+        </div>
+        <div class="ticket-row" id="combined-cash-row">
+          <span>Efectivo:</span>
+          <strong id="v-monto-efectivo">-</strong>
+        </div>
+        <div class="ticket-row" id="combined-transfer-row">
+          <span>Transferencia:</span>
+          <strong id="v-monto-transferencia">-</strong>
         </div>
       </section>
 
