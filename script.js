@@ -1258,12 +1258,9 @@ function savePrintedTickets(items) {
 }
 
 function getTicketsByMonth(selectedMonth) {
-  const all = getPrintedTickets().slice();
-  const filtered = selectedMonth
-    ? all.filter((item) => monthValue(new Date(item.printedAt)) === selectedMonth)
-    : all;
-
-  return filtered.sort((a, b) => new Date(b.printedAt) - new Date(a.printedAt));
+  return getPrintedTickets()
+    .filter((item) => monthValue(new Date(item.printedAt)) === selectedMonth)
+    .sort((a, b) => new Date(b.printedAt) - new Date(a.printedAt));
 }
 
 function isSameLocalDay(dateA, dateB) {
@@ -1375,7 +1372,7 @@ function renderHistory() {
   const selectedMonth = historyMonthEl.value;
   const query = historySearchEl.value.trim().toLowerCase();
   clearHistorySearchBtn.disabled = query.length === 0;
-  const monthItems = getTicketsByMonth(selectedMonth);
+  const monthItems = selectedMonth ? getTicketsByMonth(selectedMonth) : getPrintedTickets();
   renderDailySummary(monthItems);
   renderWeeklySummary(monthItems);
   const filtered = query
