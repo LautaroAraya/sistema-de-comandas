@@ -1258,9 +1258,12 @@ function savePrintedTickets(items) {
 }
 
 function getTicketsByMonth(selectedMonth) {
-  return getPrintedTickets()
-    .filter((item) => monthValue(new Date(item.printedAt)) === selectedMonth)
-    .sort((a, b) => new Date(b.printedAt) - new Date(a.printedAt));
+  const all = getPrintedTickets().slice();
+  const filtered = selectedMonth
+    ? all.filter((item) => monthValue(new Date(item.printedAt)) === selectedMonth)
+    : all;
+
+  return filtered.sort((a, b) => new Date(b.printedAt) - new Date(a.printedAt));
 }
 
 function isSameLocalDay(dateA, dateB) {
