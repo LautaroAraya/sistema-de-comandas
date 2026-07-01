@@ -1,4 +1,4 @@
-const CACHE_NAME = "rotiseria-comandas-v2";
+c:\Users\lauty\OneDrive\Escritorio\WhatsApp Image 2026-05-30 at 23.23.35.jpegconst CACHE_NAME = "rotiseria-comandas-v2";
 const ASSETS = [
   "./",
   "./index.html",

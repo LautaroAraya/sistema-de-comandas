@@ -1322,6 +1322,8 @@ function renderDailySummary(monthItems = []) {
         total: 0,
         delivery: 0,
         pickup: 0,
+        transfer: 0,
+        cash: 0,
       };
     }
 
@@ -1332,14 +1334,20 @@ function renderDailySummary(monthItems = []) {
       acc[dayKey].pickup += 1;
     }
 
+    const split = getPaymentBreakdown(item);
+    acc[dayKey].transfer += split.transfer;
+    acc[dayKey].cash += split.cash;
+
     return acc;
   }, {});
 
   const dayRows = Object.values(groupedByDay)
     .sort((a, b) => b.date - a.date)
     .map(
-      (day) =>
-        `<div class="daily-report-item">${formatShortDate(day.date)} · ${day.total} comanda(s) · Delivery: ${day.delivery} · Retira en local: ${day.pickup}</div>`
+      (day) => {
+        const dayTotal = day.transfer + day.cash;
+        return `<div class="daily-report-item">${formatShortDate(day.date)} · ${day.total} comanda(s) · Delivery: ${day.delivery} · Retira en local: ${day.pickup} · Se hizo: ${money(dayTotal)}</div>`;
+      }
     )
     .join("");
 
@@ -1835,6 +1843,22 @@ function handleCombinedAmountInput(event) {
   if (field.value !== formatted) {
     field.value = formatted;
   }
+
+  calculateCombinedTransfer();
+}
+
+function calculateCombinedTransfer() {
+  if (fields.pago.value !== "Combinado") {
+    return;
+  }
+
+  const total = parseAmount(fields.total.value);
+  const montoEfectivo = parseAmount(fields.montoEfectivo.value);
+
+  if (total > 0 && montoEfectivo > 0 && montoEfectivo <= total) {
+    const montoTransferencia = total - montoEfectivo;
+    fields.montoTransferencia.value = formatAmountForInput(montoTransferencia.toString());
+  }
 }
 
 function setupPasswordToggles() {
@@ -2085,6 +2109,8 @@ resetBackgroundBtn.addEventListener("click", resetBackgroundGradient);
 
 fields.total.addEventListener("input", handleTotalInput);
 fields.total.addEventListener("blur", handleTotalInput);
+fields.total.addEventListener("input", calculateCombinedTransfer);
+fields.total.addEventListener("blur", calculateCombinedTransfer);
 fields.montoEfectivo.addEventListener("input", handleCombinedAmountInput);
 fields.montoEfectivo.addEventListener("blur", handleCombinedAmountInput);
 fields.montoTransferencia.addEventListener("input", handleCombinedAmountInput);
@@ -2094,6 +2120,7 @@ fields.pago.addEventListener("change", () => {
   updateTransferStatusVisibility();
   updateCombinedPaymentVisibility();
   updatePrintCopiesNotice();
+  calculateCombinedTransfer();
 });
 
 simpleModeEl.addEventListener("change", () => {
