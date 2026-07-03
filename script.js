@@ -1706,6 +1706,78 @@ function buildFinalReportHtml({
 </html>`;
 }
 
+function buildFinalReportTicketContent({ selectedMonth, activeItems, transferTotal, cashTotal }) {
+  const totalFinal = transferTotal + cashTotal;
+  const businessName = businessPreview.nombre.textContent || activeProfileId;
+  const businessPhone = businessPreview.telefono.textContent || "Tel: -";
+  const businessAddress = businessPreview.direccion.textContent || "Direccion: -";
+  const monthLabel = monthLabelFromValue(selectedMonth);
+
+  const rows = activeItems
+    .map((item) => {
+      const date = formatShortDate(item.printedAt);
+      const total = money(parseAmount(item.total));
+      const payer = item.pago || "-";
+      return `
+        <div class="report-row">
+          <div class="r-left">${escapeHtml(date)} · #${escapeHtml(formatOrderNumber(item.numeroComanda || ""))}</div>
+          <div class="r-right">${escapeHtml(total)}</div>
+          <div class="r-sub">${escapeHtml(item.cliente || "-")} · ${escapeHtml(payer)}</div>
+        </div>
+      `;
+    })
+    .join("");
+
+  return `
+    <section class="report">
+      <header class="header">
+        <div class="title">Reporte final mensual</div>
+        <div class="meta">${escapeHtml(monthLabel)}</div>
+        <div class="meta">${escapeHtml(businessName)}</div>
+      </header>
+
+      <section class="summary">
+        <div class="summary-line"><strong>Comandas:</strong> ${activeItems.length}</div>
+        <div class="summary-line"><strong>Transferencias:</strong> ${escapeHtml(money(transferTotal))}</div>
+        <div class="summary-line"><strong>Efectivo:</strong> ${escapeHtml(money(cashTotal))}</div>
+        <div class="summary-line"><strong>Total final:</strong> ${escapeHtml(money(totalFinal))}</div>
+      </section>
+
+      <section class="items">
+        ${rows || '<div class="no-items">Sin comandas activas para el mes seleccionado.</div>'}
+      </section>
+
+      <footer class="footer">Emitido el ${escapeHtml(formatDateTime(new Date().toISOString()))}</footer>
+    </section>
+  `;
+}
+
+function estimateHtmlHeightMm(contentHtml) {
+  const host = document.createElement("div");
+  host.style.position = "fixed";
+  host.style.left = "-9999px";
+  host.style.top = "0";
+  host.style.visibility = "hidden";
+  host.style.pointerEvents = "none";
+  host.style.width = "58mm";
+  host.innerHTML = `
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: "Segoe UI", Tahoma, sans-serif; font-size: 12px; }
+      .report { padding: 2mm; }
+      .header .title { font-weight: 700; font-size: 14px; }
+      .summary { margin-top: 6px; }
+      .report-row { margin: 6px 0; }
+    </style>
+    ${contentHtml}
+  `;
+  document.body.appendChild(host);
+  const heightPx = host.scrollHeight;
+  host.remove();
+  const heightMm = (heightPx * 25.4) / 96;
+  return Math.max(60, Math.ceil(heightMm + 6));
+}
+
 function printHtmlDocument(html, onErrorMessage) {
   const iframe = document.createElement("iframe");
   iframe.style.position = "fixed";
@@ -1739,7 +1811,7 @@ function printHtmlDocument(html, onErrorMessage) {
 
 function printFinalReport() {
   const selectedMonth = historyMonthEl.value;
-  const monthItems = getTicketsByMonth(selectedMonth);
+  const monthItems = selectedMonth ? getTicketsByMonth(selectedMonth) : getPrintedTickets();
   if (monthItems.length === 0) {
     setStatus("No hay comandas para imprimir en ese mes", true, true);
     return;
@@ -1756,15 +1828,57 @@ function printFinalReport() {
     { transfer: 0, cash: 0 }
   );
 
-  const html = buildFinalReportHtml({
+  // Generar reporte adaptado a impresora de tickets (58mm)
+  const content = buildFinalReportTicketContent({
     selectedMonth,
     activeItems,
     transferTotal: totals.transfer,
     cashTotal: totals.cash,
   });
 
-  printHtmlDocument(html, "No se pudo abrir la impresion del reporte");
-  setStatus("Reporte final enviado a impresion", false, true);
+  try {
+    const pageHeightMm = estimateHtmlHeightMm(content);
+    const html = `<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reporte final ${escapeHtml(selectedMonth)}</title>
+    <style>
+      @page { size: 58mm ${pageHeightMm}mm; margin: 2mm; }
+      * { box-sizing: border-box; }
+      body { margin: 0; color: #111827; font-family: "Segoe UI", Tahoma, sans-serif; font-size: 12px; }
+      .report { padding: 2mm; width: 54mm; }
+      .header .title { font-weight: 700; font-size: 14px; text-align: center; }
+      .header .meta { font-size: 10px; text-align: center; color: #374151; }
+      .summary { margin-top: 6px; font-size: 11px; }
+      .summary-line { margin: 2px 0; }
+      .items { margin-top: 6px; font-size: 11px; }
+      .report-row { margin: 6px 0; border-bottom: 1px dashed #e5e7eb; padding-bottom: 4px; }
+      .r-left { font-size: 10px; color: #374151; }
+      .r-right { text-align: right; font-weight: 700; }
+      .r-sub { font-size: 9px; color: #6b7280; }
+      .footer { margin-top: 6px; font-size: 9px; color: #4b5563; text-align: center; }
+    </style>
+  </head>
+  <body>
+    ${content}
+  </body>
+</html>`;
+
+    printHtmlDocument(html, "No se pudo abrir la impresion del reporte");
+    setStatus("Reporte final enviado a impresion (formato ticket)", false, true);
+  } catch (e) {
+    // Fallback: imprimir versión A4
+    const fallbackHtml = buildFinalReportHtml({
+      selectedMonth,
+      activeItems,
+      transferTotal: totals.transfer,
+      cashTotal: totals.cash,
+    });
+    printHtmlDocument(fallbackHtml, "No se pudo abrir la impresion del reporte");
+    setStatus("Reporte final enviado a impresion (formato A4 - fallback)", false, true);
+  }
 }
 
 function savePrintedTicket() {
