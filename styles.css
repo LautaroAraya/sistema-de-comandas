@@ -480,10 +480,31 @@ button:disabled {
 
 .ticket {
   display: none;
+  font-family: "Courier New", monospace;
 }
 
 .ticket.visible {
   display: block;
+}
+
+.ticket-header {
+  text-align: center;
+  margin-bottom: 12px;
+  border-bottom: 2px dashed #999;
+  padding-bottom: 8px;
+}
+
+.ticket-header-title {
+  font-size: 14px;
+  font-weight: bold;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.ticket-header-subtitle {
+  font-size: 11px;
+  margin: 2px 0 0 0;
+  color: #555;
 }
 
 .ticket-business {
@@ -503,12 +524,22 @@ button:disabled {
   font-size: 14px;
 }
 
+.ticket-section {
+  margin: 8px 0;
+}
+
+.ticket-section-divider {
+  border-bottom: 2px dashed #999;
+  margin: 8px 0;
+  padding-bottom: 0;
+}
+
 .ticket-row {
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  border-bottom: 1px dashed #ddd;
-  padding: 8px 0;
+  padding: 4px 0;
+  font-size: 13px;
 }
 
 .ticket-row span {
@@ -523,6 +554,29 @@ button:disabled {
 
 .ticket-row.align-start {
   align-items: flex-start;
+}
+
+.ticket-total-section {
+  margin: 8px 0;
+  padding: 8px 0;
+  border-top: 2px dashed #999;
+  border-bottom: 2px dashed #999;
+}
+
+.ticket-total-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.ticket-footer {
+  text-align: center;
+  margin-top: 12px;
+  font-weight: bold;
+  font-size: 13px;
+  color: #333;
 }
 
 .history-panel h2 {
@@ -810,6 +864,7 @@ button:disabled {
     padding: 0;
     color: #000;
     display: block;
+    font-family: "Courier New", monospace;
   }
 
   .container {
@@ -835,68 +890,88 @@ button:disabled {
     border: none;
     border-radius: 0;
     margin: 0;
-    padding: 2mm;
+    padding: 3mm;
     width: 58mm;
     max-width: 58mm;
-    font-size: 11px;
-    line-height: 1.25;
+    font-size: 10px;
+    line-height: 1.3;
+    font-family: "Courier New", monospace;
     break-inside: avoid;
     page-break-inside: avoid;
   }
 
-  .ticket h2 {
-    font-size: 14px;
-    margin-bottom: 4px;
+  .ticket-header {
+    text-align: center;
+    margin-bottom: 3mm;
+    border-bottom: 2px dashed #000;
+    padding-bottom: 2mm;
   }
 
-  .ticket-business {
-    border-bottom-color: #000;
-    margin-bottom: 4px;
-    padding-bottom: 4px;
-  }
-
-  .ticket-business strong {
+  .ticket-header-title {
     font-size: 12px;
+    font-weight: bold;
+    margin: 0;
+    text-transform: uppercase;
   }
 
-  .ticket-business div {
-    font-size: 10px;
+  .ticket-header-subtitle {
+    font-size: 9px;
+    margin: 1px 0 0 0;
+  }
+
+  .ticket-section {
+    margin: 2mm 0;
+  }
+
+  .ticket-section-divider {
+    border-bottom: 2px dashed #000;
+    margin: 2mm 0;
+    padding-bottom: 0;
   }
 
   .ticket-row {
-    padding: 2px 0;
-  }
-
-  body.simple-ticket .ticket {
-    padding: 1.5mm;
+    display: flex;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 1px 0;
     font-size: 10px;
-    line-height: 1.15;
   }
 
-  body.simple-ticket .ticket h2 {
-    font-size: 12px;
-    text-align: center;
-    margin: 0 0 2px;
-    padding-bottom: 2px;
-    border-bottom: 1px dashed #000;
+  .ticket-row span {
+    flex: 1;
   }
 
-  body.simple-ticket .ticket-business {
-    margin-bottom: 2px;
-    padding-bottom: 2px;
+  .ticket-row strong {
+    text-align: right;
+    white-space: pre-wrap;
+    word-break: break-word;
   }
 
-  body.simple-ticket .ticket-business strong {
+  .ticket-total-section {
+    margin: 2mm 0;
+    padding: 1mm 0;
+    border-top: 2px dashed #000;
+    border-bottom: 2px dashed #000;
+  }
+
+  .ticket-total-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 1mm 0;
+    font-weight: bold;
     font-size: 11px;
   }
 
-  body.simple-ticket .ticket-business div {
-    font-size: 9px;
+  .ticket-footer {
+    text-align: center;
+    margin-top: 2mm;
+    font-weight: bold;
+    font-size: 10px;
   }
 
-  body.simple-ticket .ticket-row {
-    border-bottom: none;
-    padding: 1px 0;
-    gap: 4px;
+  body.simple-ticket .ticket {
+    padding: 3mm;
+    font-size: 10px;
+    line-height: 1.3;
   }
 }

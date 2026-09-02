@@ -283,63 +283,74 @@
 
       <section class="panel ticket requires-profile" id="ticket">
         <h2>Comanda</h2>
-        <div class="ticket-business">
-          <strong id="v-negocio-nombre">Rotisería</strong>
-          <div id="v-negocio-telefono">Tel: -</div>
-          <div id="v-negocio-direccion">Dirección: -</div>
+        <div class="ticket-header">
+          <div class="ticket-header-title" id="v-negocio-nombre">Rotisería</div>
+          <div class="ticket-header-subtitle" id="v-negocio-telefono">Tel: -</div>
+          <div class="ticket-header-subtitle" id="v-negocio-direccion">Dirección: -</div>
         </div>
-        <div class="ticket-row">
-          <span>N° comanda:</span>
-          <strong id="v-numero-comanda">-</strong>
+        <div class="ticket-section">
+          <div class="ticket-row">
+            <span>COMANDA Nº</span>
+            <strong id="v-numero-comanda">-</strong>
+          </div>
+          <div class="ticket-row">
+            <span>Fecha:</span>
+            <strong id="v-fecha">-</strong>
+          </div>
+          <div class="ticket-row">
+            <span>Cliente:</span>
+            <strong id="v-cliente">-</strong>
+          </div>
         </div>
-        <div class="ticket-row">
-          <span>Fecha:</span>
-          <strong id="v-fecha">-</strong>
+        <div class="ticket-section-divider"></div>
+        <div class="ticket-section">
+          <div class="ticket-row">
+            <span>Teléfono:</span>
+            <strong id="v-telefono">-</strong>
+          </div>
+          <div class="ticket-row">
+            <span>Envío:</span>
+            <strong id="v-envio">-</strong>
+          </div>
+          <div class="ticket-row" id="direccion-row">
+            <span>Dirección:</span>
+            <strong id="v-direccion">-</strong>
+          </div>
+          <div class="ticket-row">
+            <span>Horario:</span>
+            <strong id="v-horario">-</strong>
+          </div>
         </div>
-        <div class="ticket-row">
-          <span>Cliente:</span>
-          <strong id="v-cliente">-</strong>
+        <div class="ticket-section-divider"></div>
+        <div class="ticket-section">
+          <div style="font-size: 12px; white-space: pre-wrap; word-break: break-word; line-height: 1.4;">
+            <strong id="v-pedido">-</strong>
+          </div>
         </div>
-        <div class="ticket-row">
-          <span>Teléfono:</span>
-          <strong id="v-telefono">-</strong>
+        <div class="ticket-section-divider"></div>
+        <div class="ticket-total-section">
+          <div class="ticket-total-row">
+            <span>TOTAL</span>
+            <strong id="v-total">-</strong>
+          </div>
+          <div class="ticket-row">
+            <span>Paga con:</span>
+            <strong id="v-pago">-</strong>
+          </div>
+          <div class="ticket-row" id="transfer-status-row">
+            <span>Estado transf.:</span>
+            <strong id="v-estado-transferencia">-</strong>
+          </div>
+          <div class="ticket-row" id="combined-cash-row">
+            <span>Efectivo:</span>
+            <strong id="v-monto-efectivo">-</strong>
+          </div>
+          <div class="ticket-row" id="combined-transfer-row">
+            <span>Transferencia:</span>
+            <strong id="v-monto-transferencia">-</strong>
+          </div>
         </div>
-        <div class="ticket-row">
-          <span>Envío:</span>
-          <strong id="v-envio">-</strong>
-        </div>
-        <div class="ticket-row" id="direccion-row">
-          <span>Dirección:</span>
-          <strong id="v-direccion">-</strong>
-        </div>
-        <div class="ticket-row">
-          <span>Horario:</span>
-          <strong id="v-horario">-</strong>
-        </div>
-        <div class="ticket-row align-start">
-          <span>Pedido:</span>
-          <strong id="v-pedido">-</strong>
-        </div>
-        <div class="ticket-row">
-          <span>Total:</span>
-          <strong id="v-total">-</strong>
-        </div>
-        <div class="ticket-row">
-          <span>Paga con:</span>
-          <strong id="v-pago">-</strong>
-        </div>
-        <div class="ticket-row" id="transfer-status-row">
-          <span>Estado transf.:</span>
-          <strong id="v-estado-transferencia">-</strong>
-        </div>
-        <div class="ticket-row" id="combined-cash-row">
-          <span>Efectivo:</span>
-          <strong id="v-monto-efectivo">-</strong>
-        </div>
-        <div class="ticket-row" id="combined-transfer-row">
-          <span>Transferencia:</span>
-          <strong id="v-monto-transferencia">-</strong>
-        </div>
+        <div class="ticket-footer">¡GRACIAS!</div>
       </section>
 
       <section class="panel history-panel no-print requires-profile" id="history-panel">
