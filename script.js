@@ -1070,7 +1070,7 @@ function buildPrintableTicketMarkup(ticket, simpleMode, isTestPrint = false) {
       </div>
       <div class="ticket-section-divider"></div>
       <div class="ticket-section">
-        <div style="font-size: 9px; white-space: pre-wrap; word-break: break-word; line-height: 1.2; padding: 1mm 0;">${escapeHtml(ticket.pedido || "-")}</div>
+        <div style="font-size: 12px; font-weight: bold; white-space: pre-wrap; word-break: break-word; line-height: 1.4; padding: 1mm 0;">${escapeHtml(ticket.pedido || "-")}</div>
       </div>
       <div class="ticket-section-divider"></div>
       <div class="ticket-total-section">
