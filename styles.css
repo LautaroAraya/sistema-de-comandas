@@ -481,7 +481,7 @@ button:disabled {
 .ticket {
   display: none;
   font-family: "Courier New", monospace;
-  font-weight: 700;
+  font-weight: bold;
 }
 
 .ticket.visible {
@@ -491,23 +491,22 @@ button:disabled {
 .ticket-header {
   text-align: center;
   margin-bottom: 12px;
-  border-bottom: 3px dashed #333;
+  border-bottom: 3px solid #333;
   padding-bottom: 8px;
 }
 
 .ticket-header-title {
-  font-size: 14px;
-  font-weight: 900;
+  font-size: 15px;
+  font-weight: bold;
   margin: 0;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .ticket-header-subtitle {
-  font-size: 11px;
+  font-size: 12px;
   margin: 2px 0 0 0;
   color: #333;
-  font-weight: 700;
+  font-weight: bold;
 }
 
 .ticket-business {
@@ -520,13 +519,13 @@ button:disabled {
 
 .ticket-business strong {
   font-size: 16px;
-  font-weight: 900;
+  font-weight: bold;
 }
 
 .ticket-business div {
   color: #333;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: bold;
 }
 
 .ticket-section {
@@ -534,7 +533,7 @@ button:disabled {
 }
 
 .ticket-section-divider {
-  border-bottom: 3px dashed #333;
+  border-bottom: 3px solid #333;
   margin: 8px 0;
   padding-bottom: 0;
 }
@@ -545,19 +544,19 @@ button:disabled {
   gap: 10px;
   padding: 4px 0;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: bold;
 }
 
 .ticket-row span {
   color: #333;
-  font-weight: 700;
+  font-weight: bold;
 }
 
 .ticket-row strong {
   text-align: right;
   white-space: pre-wrap;
   word-break: break-word;
-  font-weight: 900;
+  font-weight: bold;
 }
 
 .ticket-row.align-start {
@@ -567,15 +566,15 @@ button:disabled {
 .ticket-total-section {
   margin: 8px 0;
   padding: 8px 0;
-  border-top: 3px dashed #333;
-  border-bottom: 3px dashed #333;
+  border-top: 3px solid #333;
+  border-bottom: 3px solid #333;
 }
 
 .ticket-total-row {
   display: flex;
   justify-content: space-between;
   padding: 6px 0;
-  font-weight: 900;
+  font-weight: bold;
   font-size: 14px;
 }
 
@@ -873,7 +872,7 @@ button:disabled {
     color: #000;
     display: block;
     font-family: "Courier New", monospace;
-    font-weight: 700;
+    font-weight: bold;
   }
 
   .container {
@@ -902,42 +901,41 @@ button:disabled {
     padding: 3mm;
     width: 58mm;
     max-width: 58mm;
-    font-size: 11px;
-    line-height: 1.3;
+    font-size: 12px;
+    line-height: 1.4;
     font-family: "Courier New", monospace;
-    font-weight: 700;
+    font-weight: bold;
     break-inside: avoid;
     page-break-inside: avoid;
   }
 
   .ticket-header {
     text-align: center;
-    margin-bottom: 3mm;
-    border-bottom: 3px dashed #000;
-    padding-bottom: 2mm;
+    margin-bottom: 4mm;
+    border-bottom: 3px solid #000;
+    padding-bottom: 3mm;
   }
 
   .ticket-header-title {
-    font-size: 13px;
-    font-weight: 900;
+    font-size: 14px;
+    font-weight: bold;
     margin: 0;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
   }
 
   .ticket-header-subtitle {
-    font-size: 10px;
-    margin: 1px 0 0 0;
-    font-weight: 700;
+    font-size: 11px;
+    margin: 2px 0 0 0;
+    font-weight: bold;
   }
 
   .ticket-section {
-    margin: 2mm 0;
+    margin: 3mm 0;
   }
 
   .ticket-section-divider {
-    border-bottom: 3px dashed #000;
-    margin: 2mm 0;
+    border-bottom: 3px solid #000;
+    margin: 3mm 0;
     padding-bottom: 0;
   }
 
@@ -945,50 +943,49 @@ button:disabled {
     display: flex;
     justify-content: space-between;
     gap: 4px;
-    padding: 2px 0;
-    font-size: 11px;
-    font-weight: 700;
+    padding: 3px 0;
+    font-size: 12px;
+    font-weight: bold;
   }
 
   .ticket-row span {
     flex: 1;
-    font-weight: 700;
+    font-weight: bold;
   }
 
   .ticket-row strong {
     text-align: right;
     white-space: pre-wrap;
     word-break: break-word;
-    font-weight: 900;
+    font-weight: bold;
   }
 
   .ticket-total-section {
-    margin: 2mm 0;
-    padding: 1mm 0;
-    border-top: 3px dashed #000;
-    border-bottom: 3px dashed #000;
+    margin: 3mm 0;
+    padding: 2mm 0;
+    border-top: 3px solid #000;
+    border-bottom: 3px solid #000;
   }
 
   .ticket-total-row {
     display: flex;
     justify-content: space-between;
-    padding: 1mm 0;
-    font-weight: 900;
-    font-size: 12px;
+    padding: 2mm 0;
+    font-weight: bold;
+    font-size: 13px;
   }
 
   .ticket-footer {
     text-align: center;
-    margin-top: 2mm;
-    font-weight: 900;
-    font-size: 11px;
-    letter-spacing: 0.5px;
+    margin-top: 3mm;
+    font-weight: bold;
+    font-size: 12px;
   }
 
   body.simple-ticket .ticket {
     padding: 3mm;
-    font-size: 11px;
-    line-height: 1.3;
-    font-weight: 700;
+    font-size: 12px;
+    line-height: 1.4;
+    font-weight: bold;
   }
 }
