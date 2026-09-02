@@ -896,19 +896,7 @@ function updatePrintCopiesNotice() {
     return;
   }
 
-  if (fields.pago.value === "Efectivo" || fields.pago.value === "Combinado") {
-    printCopiesNoticeEl.textContent = "Se imprimirán 2 copias automáticamente";
-    printCopiesNoticeEl.classList.add("visible");
-    return;
-  }
-
-  if (fields.pago.value === "Transferencia") {
-    printCopiesNoticeEl.textContent = "Se imprimirá 1 copia automáticamente";
-    printCopiesNoticeEl.classList.add("visible");
-    return;
-  }
-
-  printCopiesNoticeEl.textContent = "Seleccioná un método de pago para ver cuántas copias saldrán";
+  printCopiesNoticeEl.textContent = "Se imprimirá 1 copia automáticamente";
   printCopiesNoticeEl.classList.add("visible");
 }
 
@@ -1089,11 +1077,7 @@ function buildPrintableTicketMarkup(ticket, simpleMode, isTestPrint = false) {
 }
 
 function getPrintCopies(ticket, isTestPrint = false) {
-  if (isTestPrint) {
-    return 1;
-  }
-
-  return ticket.pago === "Efectivo" || ticket.pago === "Combinado" ? 2 : 1;
+  return 1;
 }
 
 function buildPrintableTicketBody(ticket, simpleMode, isTestPrint = false, copies = 1) {
