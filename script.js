@@ -896,7 +896,19 @@ function updatePrintCopiesNotice() {
     return;
   }
 
-  printCopiesNoticeEl.textContent = "Se imprimirá 1 copia automáticamente";
+  if (fields.pago.value === "Efectivo" || fields.pago.value === "Combinado") {
+    printCopiesNoticeEl.textContent = "Se imprimirán 2 copias automáticamente";
+    printCopiesNoticeEl.classList.add("visible");
+    return;
+  }
+
+  if (fields.pago.value === "Transferencia") {
+    printCopiesNoticeEl.textContent = "Se imprimirá 1 copia automáticamente";
+    printCopiesNoticeEl.classList.add("visible");
+    return;
+  }
+
+  printCopiesNoticeEl.textContent = "Seleccioná un método de pago para ver cuántas copias saldrán";
   printCopiesNoticeEl.classList.add("visible");
 }
 
@@ -1011,20 +1023,16 @@ function escapeHtml(value) {
 function getPrintableTicketStyles(simpleMode) {
   return `
     * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; background: #fff; color: #000; font-family: "Courier New", monospace; font-weight: bold; }
-    .ticket { width: 58mm; max-width: 58mm; padding: 3mm; font-size: 12px; line-height: 1.4; font-weight: bold; }
-    .ticket-header { text-align: center; margin-bottom: 4mm; border-bottom: 3px solid #000; padding-bottom: 3mm; }
-    .ticket-header-title { font-size: 14px; font-weight: bold; margin: 0; text-transform: uppercase; }
-    .ticket-header-subtitle { font-size: 11px; margin: 2px 0 0 0; font-weight: bold; }
-    .ticket-section { margin: 3mm 0; }
-    .ticket-section-divider { border-bottom: 3px solid #000; margin: 3mm 0; padding-bottom: 0; }
-    .ticket-row { display: flex; justify-content: space-between; gap: 4px; padding: 3px 0; font-size: 12px; font-weight: bold; }
-    .ticket-row.header { font-weight: bold; border-bottom: 1px solid #000; padding: 3px 0; margin-bottom: 2mm; }
-    .ticket-row span { flex: 1; font-weight: bold; }
-    .ticket-row strong { text-align: right; white-space: pre-wrap; word-break: break-word; font-weight: bold; }
-    .ticket-footer { text-align: center; margin-top: 3mm; font-weight: bold; font-size: 12px; }
-    .ticket-total-section { margin: 3mm 0; padding: 2mm 0; border-top: 3px solid #000; border-bottom: 3px solid #000; }
-    .ticket-total-row { display: flex; justify-content: space-between; padding: 2mm 0; font-weight: bold; font-size: 13px; }
+    html, body { margin: 0; padding: 0; background: #fff; color: #000; font-family: "Courier New", Courier, monospace; }
+    .ticket { width: 58mm; max-width: 58mm; padding: ${simpleMode ? "3mm 2mm 2mm" : "4mm 3mm 2mm"}; font-size: ${simpleMode ? "10px" : "11px"}; line-height: 1.2; }
+    .ticket h2 { margin: 0 0 3px; text-align: center; font-size: 15px; font-weight: 700; }
+    .ticket-business { border-bottom: none; padding-bottom: 2px; margin-bottom: 3px; display: grid; gap: 1px; }
+    .ticket-business strong { font-size: 12px; font-weight: 700; text-align: center; }
+    .ticket-business div { font-size: 10px; text-align: center; }
+    .ticket-row { display: flex; justify-content: space-between; gap: 4px; padding: 1px 0; border-bottom: none; align-items: flex-start; }
+    .ticket-row span { color: #000; flex: 1; }
+    .ticket-row strong { text-align: right; white-space: pre-wrap; word-break: break-word; font-weight: 700; max-width: 52%; }
+    .ticket-row.align-start { align-items: flex-start; }
   `;
 }
 
@@ -1039,45 +1047,35 @@ function buildPrintableTicketMarkup(ticket, simpleMode, isTestPrint = false) {
 
   return `
     <section class="ticket">
-      <div class="ticket-header">
-        <div class="ticket-header-title">${escapeHtml(businessPreview.nombre.textContent || "Rotiseria")}</div>
-        <div class="ticket-header-subtitle">${escapeHtml(businessPreview.telefono.textContent || "Tel: -")}</div>
-        <div class="ticket-header-subtitle">${escapeHtml(businessPreview.direccion.textContent || "")}</div>
+      <h2>${isTestPrint ? "Comanda - Prueba" : "Comanda"}</h2>
+      <div class="ticket-business">
+        <strong>${escapeHtml(businessPreview.nombre.textContent || "Rotiseria")}</strong>
+        <div>${escapeHtml(businessPreview.telefono.textContent || "Tel: -")}</div>
+        <div>${escapeHtml(businessPreview.direccion.textContent || "Direccion: -")}</div>
       </div>
-      <div class="ticket-section">
-        <div class="ticket-row"><span>COMANDA Nº</span><strong>${escapeHtml(ticket.numeroComanda ? formatOrderNumber(ticket.numeroComanda) : "-")}</strong></div>
-        <div class="ticket-row"><span>Fecha:</span><strong>${escapeHtml(ticket.fecha || "-")}</strong></div>
-        <div class="ticket-row"><span>Cliente:</span><strong>${escapeHtml(ticket.cliente || "-")}</strong></div>
-      </div>
-      <div class="ticket-section-divider"></div>
-      <div class="ticket-section">
-        <div class="ticket-row"><span>Teléfono:</span><strong>${escapeHtml(ticket.telefono || "-")}</strong></div>
-        <div class="ticket-row"><span>Envío:</span><strong>${escapeHtml(shippingBadge.label)}</strong></div>
-        ${showAddress ? `<div class="ticket-row"><span>Dirección:</span><strong>${escapeHtml(ticket.direccion || "-")}</strong></div>` : ""}
-        <div class="ticket-row"><span>Horario:</span><strong>${escapeHtml(ticket.horario || "-")}</strong></div>
-      </div>
-      <div class="ticket-section-divider"></div>
-      <div class="ticket-section">
-        <div style="font-size: 12px; font-weight: bold; white-space: pre-wrap; word-break: break-word; line-height: 1.4; padding: 1mm 0;">${escapeHtml(ticket.pedido || "-")}</div>
-      </div>
-      <div class="ticket-section-divider"></div>
-      <div class="ticket-total-section">
-        <div class="ticket-total-row">
-          <span>TOTAL</span>
-          <strong>${escapeHtml(ticket.total ? money(ticket.total) : "-")}</strong>
-        </div>
-        <div class="ticket-row"><span>Paga con:</span><strong>${escapeHtml(ticket.pago || "-")}</strong></div>
-        ${showTransferStatus ? `<div class="ticket-row"><span>Estado transf.:</span><strong>${escapeHtml(transferStatus)}</strong></div>` : ""}
-        ${showCombinedSplit ? `<div class="ticket-row"><span>Efectivo:</span><strong>${escapeHtml(ticket.montoEfectivo ? money(ticket.montoEfectivo) : "-")}</strong></div>` : ""}
-        ${showCombinedSplit ? `<div class="ticket-row"><span>Transferencia:</span><strong>${escapeHtml(ticket.montoTransferencia ? money(ticket.montoTransferencia) : "-")}</strong></div>` : ""}
-      </div>
-      <div class="ticket-footer">¡GRACIAS!</div>
+      <div class="ticket-row"><span>N comanda:</span><strong>${escapeHtml(ticket.numeroComanda ? formatOrderNumber(ticket.numeroComanda) : "-")}</strong></div>
+      <div class="ticket-row"><span>Fecha:</span><strong>${escapeHtml(ticket.fecha || "-")}</strong></div>
+      <div class="ticket-row"><span>Cliente:</span><strong>${escapeHtml(ticket.cliente || "-")}</strong></div>
+      <div class="ticket-row"><span>Telefono:</span><strong>${escapeHtml(ticket.telefono || "-")}</strong></div>
+      <div class="ticket-row"><span>Envio:</span><strong>${escapeHtml(shippingBadge.label)}</strong></div>
+      ${showAddress ? `<div class="ticket-row"><span>Direccion:</span><strong>${escapeHtml(ticket.direccion || "-")}</strong></div>` : ""}
+      <div class="ticket-row"><span>Horario:</span><strong>${escapeHtml(ticket.horario || "-")}</strong></div>
+      <div class="ticket-row align-start"><span>Pedido:</span><strong>${escapeHtml(ticket.pedido || "-")}</strong></div>
+      <div class="ticket-row"><span>Total:</span><strong>${escapeHtml(ticket.total ? money(ticket.total) : "-")}</strong></div>
+      <div class="ticket-row"><span>Paga con:</span><strong>${escapeHtml(ticket.pago || "-")}</strong></div>
+      ${showTransferStatus ? `<div class="ticket-row"><span>Estado transf.:</span><strong>${escapeHtml(transferStatus)}</strong></div>` : ""}
+      ${showCombinedSplit ? `<div class="ticket-row"><span>Efectivo:</span><strong>${escapeHtml(ticket.montoEfectivo ? money(ticket.montoEfectivo) : "-")}</strong></div>` : ""}
+      ${showCombinedSplit ? `<div class="ticket-row"><span>Transferencia:</span><strong>${escapeHtml(ticket.montoTransferencia ? money(ticket.montoTransferencia) : "-")}</strong></div>` : ""}
     </section>
   `;
 }
 
 function getPrintCopies(ticket, isTestPrint = false) {
-  return 1;
+  if (isTestPrint) {
+    return 1;
+  }
+
+  return ticket.pago === "Efectivo" || ticket.pago === "Combinado" ? 2 : 1;
 }
 
 function buildPrintableTicketBody(ticket, simpleMode, isTestPrint = false, copies = 1) {
