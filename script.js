@@ -90,6 +90,7 @@ const PROFILE_BASE_KEYS = {
 let activeProfileId = PROFILE_DEFAULT;
 let adminIdleTimer = null;
 let editingPrintedTicketId = null;
+let printClickLocked = false;
 
 const fields = {
   cliente: document.getElementById("cliente"),
@@ -2144,6 +2145,11 @@ form.addEventListener("submit", (event) => {
 });
 
 printBtn.addEventListener("click", () => {
+  if (printClickLocked) {
+    setStatus("La comanda ya se está enviando a impresión", false, true);
+    return;
+  }
+
   const raw = getSessionProfileValue(PROFILE_BASE_KEYS.LAST_TICKET);
   if (!raw) {
     setStatus("Primero generá una comanda", true, true);
@@ -2155,6 +2161,11 @@ printBtn.addEventListener("click", () => {
     setStatus("La comanda no es válida para imprimir", true, true);
     return;
   }
+
+  printClickLocked = true;
+  window.setTimeout(() => {
+    printClickLocked = false;
+  }, 1500);
 
   renderTicket(ticket);
   setTicketVisibility(true);
