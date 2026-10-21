@@ -2212,13 +2212,10 @@ printTestBtn.addEventListener("click", () => {
 });
 
 form.addEventListener("reset", () => {
-  const wasEditingPrintedTicket = Boolean(editingPrintedTicketId);
   setTimeout(() => {
     editingPrintedTicketId = null;
-    if (wasEditingPrintedTicket) {
-      setSessionProfileValue(PROFILE_BASE_KEYS.GENERATION_LOCKED, "true");
-      generateBtn.disabled = true;
-    }
+    setSessionProfileValue(PROFILE_BASE_KEYS.GENERATION_LOCKED, "false");
+    generateBtn.disabled = false;
     updateDeliveryAddressVisibility();
     updateTransferStatusVisibility();
     updateCombinedPaymentVisibility();
