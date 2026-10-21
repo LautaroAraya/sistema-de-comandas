@@ -1,4 +1,5 @@
 const form = document.getElementById("comanda-form");
+const generateBtn = document.getElementById("generate-comanda-btn");
 const printBtn = document.getElementById("print-btn");
 const printTestBtn = document.getElementById("print-test-btn");
 const statusEl = document.getElementById("status");
@@ -84,6 +85,7 @@ const PROFILE_BASE_KEYS = {
   BUSINESS: "businessConfig",
   AUTH: "profileAuth",
   NEXT_ORDER_NUMBER: "nextOrderNumber",
+  GENERATION_LOCKED: "generationLocked",
   BACKGROUND_GRADIENT: "backgroundGradient",
 };
 
@@ -1185,6 +1187,7 @@ function loadProfileData() {
     }
 
     const lastTicketRaw = getSessionProfileValue(PROFILE_BASE_KEYS.LAST_TICKET);
+    generateBtn.disabled = getSessionProfileValue(PROFILE_BASE_KEYS.GENERATION_LOCKED) === "true";
     if (lastTicketRaw) {
       printBtn.disabled = false;
       printTestBtn.disabled = false;
@@ -1488,6 +1491,8 @@ function startEditingPrintedTicket(ticketId) {
   }
 
   editingPrintedTicketId = ticketId;
+  setSessionProfileValue(PROFILE_BASE_KEYS.GENERATION_LOCKED, "true");
+  generateBtn.disabled = false;
   writeFormValues(ticket);
   setTicketVisibility(false);
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -2053,6 +2058,11 @@ function setupKeyboardShortcuts() {
 form.addEventListener("submit", (event) => {
   event.preventDefault();
 
+  if (generateBtn.disabled && !editingPrintedTicketId) {
+    setStatus("Ya generaste una comanda. Editá una comanda del historial para generar otra.", false, true);
+    return;
+  }
+
   if (!form.checkValidity()) {
     form.reportValidity();
     return;
@@ -2106,6 +2116,7 @@ form.addEventListener("submit", (event) => {
 
     if (index === -1) {
       editingPrintedTicketId = null;
+      generateBtn.disabled = true;
       setStatus("No se encontró la comanda a editar", true, true);
       return;
     }
@@ -2120,7 +2131,9 @@ form.addEventListener("submit", (event) => {
     printedItems[index] = updatedTicket;
     savePrintedTickets(printedItems);
     setSessionProfileValue(PROFILE_BASE_KEYS.LAST_TICKET, JSON.stringify(updatedTicket));
+    setSessionProfileValue(PROFILE_BASE_KEYS.GENERATION_LOCKED, "true");
     editingPrintedTicketId = null;
+    generateBtn.disabled = true;
     printBtn.disabled = false;
     printTestBtn.disabled = false;
     setTicketVisibility(false);
@@ -2137,8 +2150,10 @@ form.addEventListener("submit", (event) => {
   };
 
   setSessionProfileValue(PROFILE_BASE_KEYS.LAST_TICKET, JSON.stringify(ticketData));
+  setSessionProfileValue(PROFILE_BASE_KEYS.GENERATION_LOCKED, "true");
   saveDraft();
   setTicketVisibility(false);
+  generateBtn.disabled = true;
   printBtn.disabled = false;
   printTestBtn.disabled = false;
   setStatus("Comanda generada. Se mostrará al imprimir.", false, true);
@@ -2197,8 +2212,13 @@ printTestBtn.addEventListener("click", () => {
 });
 
 form.addEventListener("reset", () => {
+  const wasEditingPrintedTicket = Boolean(editingPrintedTicketId);
   setTimeout(() => {
     editingPrintedTicketId = null;
+    if (wasEditingPrintedTicket) {
+      setSessionProfileValue(PROFILE_BASE_KEYS.GENERATION_LOCKED, "true");
+      generateBtn.disabled = true;
+    }
     updateDeliveryAddressVisibility();
     updateTransferStatusVisibility();
     updateCombinedPaymentVisibility();
